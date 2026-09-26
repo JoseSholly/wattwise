@@ -1,15 +1,11 @@
-import { AlertTriangle, Loader2, Zap } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import type { ApiIssue } from '../api/client'
+import { describeLoc } from '../lib/serverErrors'
 
 export function EmptyState() {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-slate-300 bg-white/60 px-6 py-12 text-center">
-      <Zap size={28} className="text-slate-400" aria-hidden="true" />
-      <p className="text-sm font-medium text-slate-700">No results yet</p>
-      <p className="max-w-sm text-sm text-slate-500">
-        List the appliances you want to run, then calculate to see the inverter, battery,
-        panel and charge controller sizing.
-      </p>
+    <div className="rounded border border-dashed border-neutral-300 px-4 py-8 text-sm text-neutral-500">
+      Results appear here after you calculate.
     </div>
   )
 }
@@ -30,16 +26,12 @@ export function LoadingState() {
     <div
       role="status"
       aria-live="polite"
-      className="flex flex-col items-center gap-3 rounded-lg border border-slate-200 bg-white px-6 py-12 text-center"
+      className="rounded border border-neutral-200 px-4 py-8 text-sm"
     >
-      <Loader2 size={28} className="animate-spin text-slate-500" aria-hidden="true" />
-      <p className="text-sm font-medium text-slate-700">
-        Calculating… {seconds}s
-      </p>
+      <p className="tabular-nums text-neutral-900">Calculating… {seconds}s</p>
       {seconds >= 5 && (
-        <p className="max-w-sm text-sm text-slate-500">
-          The API sleeps when idle and can take 30&ndash;60 seconds to wake up on the first
-          request. Still waiting — this is normal.
+        <p className="mt-1 text-neutral-500">
+          The API sleeps when idle and can take 30–60 seconds to wake on the first request.
         </p>
       )}
     </div>
@@ -47,46 +39,31 @@ export function LoadingState() {
 }
 
 type ErrorStateProps = {
-  /** Top-level message. For validation failures, prefer the API's own text. */
   message: string
-  /** Field-level errors exactly as the API returned them. */
-  fieldErrors?: Record<string, string[]> | null
+  /** Problems the form couldn't attach to a specific field. */
+  issues?: ApiIssue[]
   onRetry?: () => void
 }
 
-export function ErrorState({ message, fieldErrors, onRetry }: ErrorStateProps) {
-  const entries = fieldErrors ? Object.entries(fieldErrors) : []
-
+export function ErrorState({ message, issues = [], onRetry }: ErrorStateProps) {
   return (
-    <div
-      role="alert"
-      className="flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 px-5 py-5"
-    >
-      <div className="flex items-start gap-2">
-        <AlertTriangle size={20} className="mt-0.5 shrink-0 text-red-600" aria-hidden="true" />
-        <p className="text-sm font-medium text-red-800">{message}</p>
-      </div>
+    <div role="alert" className="rounded border border-red-200 border-l-red-600 border-l-2 px-4 py-4 text-sm">
+      <p className="font-medium text-red-700">{message}</p>
 
-      {entries.length > 0 && (
-        <ul className="flex flex-col gap-1 pl-7 text-sm text-red-700">
-          {entries.map(([field, messages]) => (
-            <li key={field}>
-              <span className="font-medium">{field}:</span> {messages.join(' ')}
+      {issues.length > 0 && (
+        <ul className="mt-2 flex flex-col gap-1 text-neutral-700">
+          {issues.map((issue, i) => (
+            <li key={i}>
+              <span className="text-neutral-500">{describeLoc(issue.loc)}:</span> {issue.msg}
             </li>
           ))}
         </ul>
       )}
 
       {onRetry && (
-        <div className="pl-7">
-          <button
-            type="button"
-            onClick={onRetry}
-            className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
-          >
-            Try again
-          </button>
-        </div>
+        <button type="button" onClick={onRetry} className="btn-secondary mt-3">
+          Try again
+        </button>
       )}
     </div>
   )

@@ -5,3 +5,44 @@
 html {
   -webkit-text-size-adjust: 100%;
 }
+
+body {
+  @apply bg-white text-neutral-900 antialiased;
+}
+
+@layer components {
+  /* Text inputs and selects share one look. 16px on phones stops iOS zooming on focus. */
+  .control {
+    @apply h-10 w-full min-w-0 rounded border border-neutral-300 bg-white px-2.5 text-base tabular-nums
+      text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none
+      focus:ring-1 focus:ring-neutral-900 disabled:bg-neutral-50 disabled:text-neutral-400 sm:h-9 sm:text-sm;
+  }
+
+  .control[aria-invalid='true'] {
+    @apply border-red-600 focus:border-red-600 focus:ring-red-600;
+  }
+
+  select.control {
+    @apply appearance-none bg-no-repeat pr-8;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23737373' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-position: right 0.75rem center;
+  }
+
+  .btn {
+    @apply inline-flex h-10 items-center justify-center gap-1.5 rounded px-4 text-sm font-medium
+      focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+      focus-visible:outline-neutral-900 disabled:cursor-not-allowed disabled:opacity-50 sm:h-9;
+  }
+
+  .btn-primary {
+    @apply btn bg-neutral-900 text-white hover:bg-neutral-700;
+  }
+
+  .btn-secondary {
+    @apply btn border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-50;
+  }
+
+  .eyebrow {
+    @apply text-xs font-medium uppercase tracking-wide text-neutral-500;
+  }
+}

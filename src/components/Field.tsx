@@ -1,50 +1,88 @@
-import type { InputHTMLAttributes } from 'react'
+import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react'
 import { forwardRef } from 'react'
 
-type FieldProps = InputHTMLAttributes<HTMLInputElement> & {
+type Common = {
   id: string
   label: string
   error?: string
-  hint?: string
+  hint?: ReactNode
+  /** Hide the label visually from `sm` up, where a table header labels the column. */
+  compactLabel?: boolean
 }
 
-export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
-  { id, label, error, hint, className = '', ...inputProps },
-  ref,
-) {
-  const describedBy = [error ? `${id}-error` : null, hint ? `${id}-hint` : null]
-    .filter(Boolean)
-    .join(' ')
+function describedBy(id: string, error?: string, hint?: ReactNode) {
+  return [error ? `${id}-error` : null, hint ? `${id}-hint` : null].filter(Boolean).join(' ') || undefined
+}
 
+function Label({ id, label, compactLabel }: Pick<Common, 'id' | 'label' | 'compactLabel'>) {
   return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-sm font-medium text-slate-700">
-        {label}
-      </label>
-      <input
-        id={id}
-        ref={ref}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy || undefined}
-        className={`w-full rounded-md border px-3 py-2 text-base text-slate-900 outline-none transition
-          placeholder:text-slate-400 focus:ring-2 focus:ring-offset-0
-          ${
-            error
-              ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
-              : 'border-slate-300 focus:border-slate-500 focus:ring-slate-200'
-          } ${className}`}
-        {...inputProps}
-      />
-      {hint && (
-        <p id={`${id}-hint`} className="text-xs text-slate-500">
+    <label
+      htmlFor={id}
+      className={`text-sm text-neutral-600 ${compactLabel ? 'sm:sr-only' : ''}`}
+    >
+      {label}
+    </label>
+  )
+}
+
+function Messages({ id, error, hint }: Pick<Common, 'id' | 'error' | 'hint'>) {
+  return (
+    <>
+      {hint && !error && (
+        <p id={`${id}-hint`} className="text-xs text-neutral-500">
           {hint}
         </p>
       )}
       {error && (
-        <p id={`${id}-error`} role="alert" className="text-xs font-medium text-red-600">
+        <p id={`${id}-error`} className="text-xs text-red-600">
           {error}
         </p>
       )}
+    </>
+  )
+}
+
+export const Field = forwardRef<
+  HTMLInputElement,
+  InputHTMLAttributes<HTMLInputElement> & Common
+>(function Field({ id, label, error, hint, compactLabel, className = '', ...inputProps }, ref) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
+      <Label id={id} label={label} compactLabel={compactLabel} />
+      <input
+        id={id}
+        ref={ref}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy(id, error, hint)}
+        className={`control ${className}`}
+        {...inputProps}
+      />
+      <Messages id={id} error={error} hint={hint} />
+    </div>
+  )
+})
+
+export const Select = forwardRef<
+  HTMLSelectElement,
+  SelectHTMLAttributes<HTMLSelectElement> & Common
+>(function Select(
+  { id, label, error, hint, compactLabel, className = '', children, ...selectProps },
+  ref,
+) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
+      <Label id={id} label={label} compactLabel={compactLabel} />
+      <select
+        id={id}
+        ref={ref}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy(id, error, hint)}
+        className={`control ${className}`}
+        {...selectProps}
+      >
+        {children}
+      </select>
+      <Messages id={id} error={error} hint={hint} />
     </div>
   )
 })
