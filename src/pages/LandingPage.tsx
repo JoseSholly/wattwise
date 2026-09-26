@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import { Reveal } from '../components/Reveal'
 import { ASSUMPTIONS } from '../lib/model'
 
 // Real energy imagery via Unsplash direct image URLs.
@@ -87,17 +88,26 @@ function Hero() {
       />
 
       <div className="relative mx-auto w-full max-w-6xl px-4 pb-16 pt-24 sm:px-6 sm:pb-28 sm:pt-40">
-        <p className="label-mono text-white/70">Backup power sizing · WattWise</p>
-        <h1 className="display mt-5 max-w-4xl text-[34px] font-semibold leading-[1.05] tracking-tight text-white sm:mt-6 sm:text-6xl md:text-7xl">
-          Size your backup power system with confidence.
-        </h1>
-        <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/80 sm:mt-6 sm:text-xl">
-          Tell WattWise which appliances you run and how long you need them to last during an
-          outage. Get an inverter, battery bank, solar array and charge-controller spec you can
-          take straight to an installer.
-        </p>
+        <Reveal>
+          <p className="label-mono text-white/70">Backup power sizing · WattWise</p>
+        </Reveal>
+        <Reveal delay={80}>
+          <h1 className="display mt-5 max-w-4xl text-[34px] font-semibold leading-[1.05] tracking-tight text-white sm:mt-6 sm:text-6xl md:text-7xl">
+            Size your backup power system with confidence.
+          </h1>
+        </Reveal>
+        <Reveal delay={180}>
+          <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/80 sm:mt-6 sm:text-xl">
+            Tell WattWise which appliances you run and how long you need them to last during an
+            outage. Get an inverter, battery bank, solar array and charge-controller spec you can
+            take straight to an installer.
+          </p>
+        </Reveal>
 
-        <div className="mt-8 flex flex-col items-stretch gap-3 sm:mt-10 sm:flex-row sm:items-center sm:gap-4">
+        <Reveal
+          delay={280}
+          className="mt-8 flex flex-col items-stretch gap-3 sm:mt-10 sm:flex-row sm:items-center sm:gap-4"
+        >
           <Link to="/v1/system" className="btn-accent px-7 text-base">
             Start sizing
           </Link>
@@ -107,34 +117,36 @@ function Hero() {
           >
             How it works ↓
           </a>
-        </div>
+        </Reveal>
 
-        <dl className="mt-12 grid max-w-3xl grid-cols-2 gap-x-6 gap-y-4 border-t border-white/15 pt-6 text-white/80 sm:mt-16 sm:grid-cols-4 sm:gap-x-8 sm:pt-8">
-          <div>
-            <dt className="label-mono text-white/50">Inverter</dt>
-            <dd className="num mt-1 text-lg font-semibold text-white">
-              0.66 <span className="text-xs font-normal text-white/60">kVA</span>
-            </dd>
-          </div>
-          <div>
-            <dt className="label-mono text-white/50">Batteries</dt>
-            <dd className="num mt-1 text-lg font-semibold text-white">
-              4 <span className="text-xs font-normal text-white/60">× 200 Ah</span>
-            </dd>
-          </div>
-          <div>
-            <dt className="label-mono text-white/50">Solar</dt>
-            <dd className="num mt-1 text-lg font-semibold text-white">
-              2 <span className="text-xs font-normal text-white/60">× 400 W</span>
-            </dd>
-          </div>
-          <div>
-            <dt className="label-mono text-white/50">Controller</dt>
-            <dd className="num mt-1 text-lg font-semibold text-white">
-              41.67 <span className="text-xs font-normal text-white/60">A</span>
-            </dd>
-          </div>
-        </dl>
+        <Reveal delay={380}>
+          <dl className="mt-12 grid max-w-3xl grid-cols-2 gap-x-6 gap-y-4 border-t border-white/15 pt-6 text-white/80 sm:mt-16 sm:grid-cols-4 sm:gap-x-8 sm:pt-8">
+            <div>
+              <dt className="label-mono text-white/50">Inverter</dt>
+              <dd className="num mt-1 text-lg font-semibold text-white">
+                0.66 <span className="text-xs font-normal text-white/60">kVA</span>
+              </dd>
+            </div>
+            <div>
+              <dt className="label-mono text-white/50">Batteries</dt>
+              <dd className="num mt-1 text-lg font-semibold text-white">
+                4 <span className="text-xs font-normal text-white/60">× 200 Ah</span>
+              </dd>
+            </div>
+            <div>
+              <dt className="label-mono text-white/50">Solar</dt>
+              <dd className="num mt-1 text-lg font-semibold text-white">
+                2 <span className="text-xs font-normal text-white/60">× 400 W</span>
+              </dd>
+            </div>
+            <div>
+              <dt className="label-mono text-white/50">Controller</dt>
+              <dd className="num mt-1 text-lg font-semibold text-white">
+                41.67 <span className="text-xs font-normal text-white/60">A</span>
+              </dd>
+            </div>
+          </dl>
+        </Reveal>
       </div>
     </section>
   )
@@ -145,7 +157,7 @@ function HowItWorks() {
     <section id="how-it-works" className="border-b border-line bg-bg">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
         <div className="grid gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-          <div className="lg:sticky lg:top-24 lg:self-start">
+          <Reveal className="lg:sticky lg:top-24 lg:self-start">
             <p className="label-mono">How it works</p>
             <h2 className="display mt-4 text-3xl font-semibold text-fg sm:text-4xl">
               Three focused steps, one considered result.
@@ -154,22 +166,27 @@ function HowItWorks() {
               WattWise splits the calculation into a short guided flow. You can move back and
               forth between steps at any time — your inputs are preserved.
             </p>
-          </div>
+          </Reveal>
 
           <ol className="flex flex-col divide-y divide-line border-t border-line">
             {STEPS.map((step, i) => (
-              <li key={step.title} className="grid grid-cols-[3.5rem_1fr] items-baseline gap-6 py-8">
-                <span className="num text-xl font-semibold tabular-nums text-accent-ink">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <div>
-                  <h3 className="display text-2xl font-semibold text-fg sm:text-3xl">
-                    {step.title}
-                  </h3>
-                  <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">
-                    {step.body}
-                  </p>
-                </div>
+              <li key={step.title}>
+                <Reveal
+                  delay={i * 120}
+                  className="grid grid-cols-[3.5rem_1fr] items-baseline gap-6 py-8"
+                >
+                  <span className="num text-xl font-semibold tabular-nums text-accent-ink">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <div>
+                    <h3 className="display text-2xl font-semibold text-fg sm:text-3xl">
+                      {step.title}
+                    </h3>
+                    <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">
+                      {step.body}
+                    </p>
+                  </div>
+                </Reveal>
               </li>
             ))}
           </ol>
@@ -183,7 +200,7 @@ function Outputs() {
   return (
     <section className="relative border-b border-line">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
-        <div className="max-w-3xl">
+        <Reveal className="max-w-3xl">
           <p className="label-mono">What WattWise calculates</p>
           <h2 className="display mt-4 text-3xl font-semibold text-fg sm:text-4xl">
             A specification a real installer can read.
@@ -191,17 +208,21 @@ function Outputs() {
           <p className="mt-5 text-[15px] leading-relaxed text-muted">
             Four numbers that fully describe your system. No dashboards, no marketing metrics.
           </p>
-        </div>
+        </Reveal>
 
         <dl className="mt-16 grid gap-x-12 gap-y-14 md:grid-cols-2">
           {OUTPUTS.map((out, i) => (
-            <div key={out.label} className={i % 2 === 1 ? 'md:mt-16' : ''}>
+            <Reveal
+              key={out.label}
+              delay={(i % 2) * 100 + Math.floor(i / 2) * 60}
+              className={i % 2 === 1 ? 'md:mt-16' : ''}
+            >
               <dt className="flex items-baseline justify-between gap-4 border-b border-line pb-3">
                 <span className="text-lg font-semibold text-fg">{out.label}</span>
                 <span className="num text-sm text-muted">{out.unit}</span>
               </dt>
               <dd className="mt-4 max-w-md text-[15px] leading-relaxed text-muted">{out.body}</dd>
-            </div>
+            </Reveal>
           ))}
         </dl>
       </div>
@@ -214,7 +235,7 @@ function TechnicalExplanation() {
     <section className="border-b border-line bg-surface2/50">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
         <div className="grid gap-16 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-          <div>
+          <Reveal>
             <p className="label-mono">How the calculation works</p>
             <h2 className="display mt-4 text-3xl font-semibold text-fg sm:text-4xl">
               A transparent sizing model, no black box.
@@ -236,9 +257,9 @@ function TechnicalExplanation() {
                 headroom.
               </p>
             </div>
-          </div>
+          </Reveal>
 
-          <div className="lg:pt-16">
+          <Reveal delay={140} className="lg:pt-16">
             <img
               src={SETUP_IMAGE}
               alt="Battery bank and inverter installed in a residential utility room."
@@ -257,7 +278,7 @@ function TechnicalExplanation() {
                 </div>
               ))}
             </dl>
-          </div>
+          </Reveal>
         </div>
       </div>
     </section>
@@ -268,7 +289,7 @@ function VersionSplit() {
   return (
     <section className="border-b border-line">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
-        <div className="max-w-2xl">
+        <Reveal className="max-w-2xl">
           <p className="label-mono">Which flow fits you</p>
           <h2 className="display mt-4 text-3xl font-semibold text-fg sm:text-4xl">
             Two sizing modes, same accurate model.
@@ -278,48 +299,52 @@ function VersionSplit() {
             catalogue of common ratings. The custom flow lets each appliance define its own
             runtime and accepts any equipment specification you own.
           </p>
-        </div>
+        </Reveal>
 
         <div className="mt-14 grid gap-6 md:grid-cols-2">
-          <Link
-            to="/v1/system"
-            className="group flex flex-col justify-between rounded-lg border border-line bg-surface p-8 transition-colors hover:border-fg/30 sm:p-10"
-          >
-            <div>
-              <p className="label-mono">Version one</p>
-              <h3 className="display mt-3 text-2xl font-semibold text-fg">Standard sizing</h3>
-              <p className="mt-3 text-[15px] leading-relaxed text-muted">
-                Everything runs for the same backup time. Battery, panel and voltage picked from
-                common standard sizes.
-              </p>
-            </div>
-            <div className="mt-8 flex items-center justify-between border-t border-line pt-4">
-              <span className="text-sm text-muted">Best for most homes</span>
-              <span className="text-sm font-medium text-accent-ink group-hover:text-fg">
-                Start →
-              </span>
-            </div>
-          </Link>
+          <Reveal delay={120}>
+            <Link
+              to="/v1/system"
+              className="group flex h-full flex-col justify-between rounded-lg border border-line bg-surface p-8 transition-colors hover:border-fg/30 sm:p-10"
+            >
+              <div>
+                <p className="label-mono">Version one</p>
+                <h3 className="display mt-3 text-2xl font-semibold text-fg">Standard sizing</h3>
+                <p className="mt-3 text-[15px] leading-relaxed text-muted">
+                  Everything runs for the same backup time. Battery, panel and voltage picked
+                  from common standard sizes.
+                </p>
+              </div>
+              <div className="mt-8 flex items-center justify-between border-t border-line pt-4">
+                <span className="text-sm text-muted">Best for most homes</span>
+                <span className="text-sm font-medium text-accent-ink group-hover:text-fg">
+                  Start →
+                </span>
+              </div>
+            </Link>
+          </Reveal>
 
-          <Link
-            to="/v2/system"
-            className="group flex flex-col justify-between rounded-lg border border-line bg-surface p-8 transition-colors hover:border-fg/30 sm:p-10"
-          >
-            <div>
-              <p className="label-mono">Version two</p>
-              <h3 className="display mt-3 text-2xl font-semibold text-fg">Custom sizing</h3>
-              <p className="mt-3 text-[15px] leading-relaxed text-muted">
-                Every appliance runs for its own number of hours. Any 12 V-multiple system
-                voltage, any battery or panel rating.
-              </p>
-            </div>
-            <div className="mt-8 flex items-center justify-between border-t border-line pt-4">
-              <span className="text-sm text-muted">Best for mixed loads or off-grid</span>
-              <span className="text-sm font-medium text-accent-ink group-hover:text-fg">
-                Start →
-              </span>
-            </div>
-          </Link>
+          <Reveal delay={220}>
+            <Link
+              to="/v2/system"
+              className="group flex h-full flex-col justify-between rounded-lg border border-line bg-surface p-8 transition-colors hover:border-fg/30 sm:p-10"
+            >
+              <div>
+                <p className="label-mono">Version two</p>
+                <h3 className="display mt-3 text-2xl font-semibold text-fg">Custom sizing</h3>
+                <p className="mt-3 text-[15px] leading-relaxed text-muted">
+                  Every appliance runs for its own number of hours. Any 12 V-multiple system
+                  voltage, any battery or panel rating.
+                </p>
+              </div>
+              <div className="mt-8 flex items-center justify-between border-t border-line pt-4">
+                <span className="text-sm text-muted">Best for mixed loads or off-grid</span>
+                <span className="text-sm font-medium text-accent-ink group-hover:text-fg">
+                  Start →
+                </span>
+              </div>
+            </Link>
+          </Reveal>
         </div>
       </div>
     </section>
@@ -346,7 +371,7 @@ function CtaBand() {
       />
 
       <div className="relative mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-6 sm:py-24 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-end lg:gap-16">
-        <div>
+        <Reveal>
           <p className="label-mono text-white/60">Ready when you are</p>
           <h2 className="display mt-4 text-4xl font-semibold leading-[1.05] text-white sm:text-5xl md:text-6xl">
             Stop guessing.<br />
@@ -356,9 +381,12 @@ function CtaBand() {
             One short flow — system, loads, spec. A real specification you can hand to an
             installer with confidence, in under two minutes.
           </p>
-        </div>
+        </Reveal>
 
-        <div className="flex flex-col gap-4 border-t border-white/20 pt-6 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0">
+        <Reveal
+          delay={140}
+          className="flex flex-col gap-4 border-t border-white/20 pt-6 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0"
+        >
           <div>
             <p className="label-mono text-white/50">Standard sizing</p>
             <p className="mt-2 text-sm leading-relaxed text-white/75">
@@ -375,7 +403,7 @@ function CtaBand() {
           >
             Or try custom sizing — per-appliance runtime →
           </Link>
-        </div>
+        </Reveal>
       </div>
     </section>
   )
