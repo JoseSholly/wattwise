@@ -3,11 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
     <meta
       name="description"
-      content="Size an inverter, battery, solar array and charge controller from your appliance list."
+      content="Size an inverter, battery bank, solar array and charge controller from the appliances you want to run."
     />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Watt Wise</title>
+    <script>
+      // Apply the saved theme before first paint so there is no flash.
+      ;(function () {
+        var pref = 'system'
+        try {
+          pref = localStorage.getItem('wattwise-theme') || 'system'
+        } catch (e) {}
+        var dark =
+          pref === 'dark' ||
+          (pref !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        if (dark) document.documentElement.classList.add('dark')
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

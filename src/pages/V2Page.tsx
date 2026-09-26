@@ -4,8 +4,10 @@ import { calculateV2 } from '../api/calculate'
 import { CalculatorLayout } from '../components/CalculatorLayout'
 import { Field } from '../components/Field'
 import { ItemsTable } from '../components/ItemsTable'
+import { Panel } from '../components/Panel'
 import { Results } from '../components/Results'
 import { EmptyState, ErrorState, LoadingState } from '../components/states'
+import { num } from '../lib/format'
 import { blankItem, v2Schema, type V2Form } from '../lib/schemas'
 import { useCalculation } from '../lib/useCalculation'
 
@@ -30,91 +32,84 @@ export function V2Page() {
   const data = mutation.data
 
   return (
-    <CalculatorLayout
-      title="Per-appliance backup time"
-      description="Each appliance runs for its own number of hours, e.g. a fridge overnight and a TV for the evening. Any 12 V multiple, battery size and panel rating."
-      resultKey={data}
-      form={
-        <FormProvider {...form}>
-          <form
-            onSubmit={handleSubmit((values) => mutation.mutate(values))}
-            noValidate
-            className="flex flex-col gap-8"
-          >
-            <fieldset>
-              <legend className="eyebrow mb-3">System</legend>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <Field
-                  id="system_voltage"
-                  label="System voltage (V)"
-                  type="number"
-                  inputMode="numeric"
-                  step="12"
-                  min="12"
-                  max="240"
-                  hint="Multiple of 12"
-                  error={errors.system_voltage?.message}
-                  {...register('system_voltage', { valueAsNumber: true })}
-                />
-                <Field
-                  id="battery_capacity"
-                  label="Battery, 12 V (Ah)"
-                  type="number"
-                  inputMode="decimal"
-                  step="any"
-                  min="1"
-                  max="5000"
-                  error={errors.battery_capacity?.message}
-                  {...register('battery_capacity', { valueAsNumber: true })}
-                />
-                <Field
-                  id="solar_panel_watt"
-                  label="Solar panel (W)"
-                  type="number"
-                  inputMode="decimal"
-                  step="any"
-                  min="1"
-                  max="1000"
-                  error={errors.solar_panel_watt?.message}
-                  {...register('solar_panel_watt', { valueAsNumber: true })}
-                />
-              </div>
-            </fieldset>
+    <FormProvider {...form}>
+      <CalculatorLayout
+        version="v2"
+        title="Per-appliance backup time"
+        description="Each appliance runs for its own number of hours, e.g. a fridge overnight and a TV for the evening. Any 12 V multiple, battery size and panel rating."
+        onSubmit={handleSubmit((values) => mutation.mutate(values))}
+        isSubmitting={mutation.isPending}
+        resultKey={data}
+        resultsMeta={
+          data && (
+            <span className="font-mono text-[11px] text-subtle">
+              {num(data.system_voltage)} V system
+            </span>
+          )
+        }
+        results={
+          mutation.isPending ? (
+            <LoadingState />
+          ) : mutation.isError ? (
+            <ErrorState message={message} issues={issues} />
+          ) : data ? (
+            <Results
+              output={data}
+              system_voltage={data.system_voltage}
+              battery_capacity={data.battery_capacity}
+              solar_panel_watt={data.solar_panel_watt}
+              items={data.items}
+            />
+          ) : (
+            <EmptyState />
+          )
+        }
+      >
+        <Panel index="01" title="System">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3">
+            <Field
+              id="system_voltage"
+              label="System voltage"
+              hint="×12"
+              unit="V"
+              type="number"
+              inputMode="numeric"
+              step="12"
+              min="12"
+              max="240"
+              error={errors.system_voltage?.message}
+              {...register('system_voltage', { valueAsNumber: true })}
+            />
+            <Field
+              id="battery_capacity"
+              label="Battery"
+              hint="12 V unit"
+              unit="Ah"
+              type="number"
+              inputMode="decimal"
+              step="any"
+              min="1"
+              max="5000"
+              error={errors.battery_capacity?.message}
+              {...register('battery_capacity', { valueAsNumber: true })}
+            />
+            <Field
+              id="solar_panel_watt"
+              label="Solar panel"
+              unit="W"
+              type="number"
+              inputMode="decimal"
+              step="any"
+              min="1"
+              max="1000"
+              error={errors.solar_panel_watt?.message}
+              {...register('solar_panel_watt', { valueAsNumber: true })}
+            />
+          </div>
+        </Panel>
 
-            <fieldset>
-              <legend className="eyebrow mb-3">Appliances</legend>
-              <ItemsTable withBackupTime />
-            </fieldset>
-
-            <div>
-              <button
-                type="submit"
-                disabled={mutation.isPending}
-                className="btn-primary w-full sm:w-auto"
-              >
-                {mutation.isPending ? 'Calculating…' : 'Calculate'}
-              </button>
-            </div>
-          </form>
-        </FormProvider>
-      }
-      results={
-        mutation.isPending ? (
-          <LoadingState />
-        ) : mutation.isError ? (
-          <ErrorState message={message} issues={issues} />
-        ) : data ? (
-          <Results
-            output={data}
-            system_voltage={data.system_voltage}
-            battery_capacity={data.battery_capacity}
-            solar_panel_watt={data.solar_panel_watt}
-            items={data.items}
-          />
-        ) : (
-          <EmptyState />
-        )
-      }
-    />
+        <ItemsTable index="02" withBackupTime />
+      </CalculatorLayout>
+    </FormProvider>
   )
 }

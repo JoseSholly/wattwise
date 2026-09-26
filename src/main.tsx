@@ -1,9 +1,12 @@
+import '@fontsource-variable/inter'
+import '@fontsource-variable/jetbrains-mono'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import { Layout } from './components/Layout'
 import './index.css'
+import { LandingPage } from './pages/LandingPage'
 import { V1Page } from './pages/V1Page'
 import { V2Page } from './pages/V2Page'
 
@@ -19,9 +22,10 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <Routes>
           <Route element={<Layout />}>
+            <Route index element={<LandingPage />} />
             <Route path="v1" element={<V1Page />} />
             <Route path="v2" element={<V2Page />} />
-            <Route path="*" element={<Navigate to="/v1" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
       </BrowserRouter>
