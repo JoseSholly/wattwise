@@ -1,11 +1,17 @@
+import { AlertTriangle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { ApiIssue } from '../api/client'
 import { describeLoc } from '../lib/serverErrors'
+import { SpecSheet } from './SpecSheet'
 
 export function EmptyState() {
   return (
-    <div className="rounded border border-dashed border-neutral-300 px-4 py-8 text-sm text-neutral-500">
-      Results appear here after you calculate.
+    <div className="flex flex-col gap-4">
+      <SpecSheet />
+      <p className="text-sm text-muted">
+        Add your appliances and press <span className="font-medium text-fg">Calculate</span>. The
+        sizing appears here.
+      </p>
     </div>
   )
 }
@@ -23,17 +29,19 @@ export function LoadingState() {
   }, [])
 
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      className="rounded border border-neutral-200 px-4 py-8 text-sm"
-    >
-      <p className="tabular-nums text-neutral-900">Calculating… {seconds}s</p>
-      {seconds >= 5 && (
-        <p className="mt-1 text-neutral-500">
-          The API sleeps when idle and can take 30–60 seconds to wake on the first request.
+    <div className="flex flex-col gap-4">
+      <SpecSheet pending />
+      <div role="status" aria-live="polite" className="text-sm">
+        <p className="flex items-center gap-2">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" aria-hidden="true" />
+          Calculating… <span className="num text-muted">{seconds}s</span>
         </p>
-      )}
+        {seconds >= 5 && (
+          <p className="mt-1 text-muted">
+            The API sleeps when idle and can take 30–60 seconds to wake on the first request.
+          </p>
+        )}
+      </div>
     </div>
   )
 }
@@ -47,21 +55,24 @@ type ErrorStateProps = {
 
 export function ErrorState({ message, issues = [], onRetry }: ErrorStateProps) {
   return (
-    <div role="alert" className="rounded border border-red-200 border-l-red-600 border-l-2 px-4 py-4 text-sm">
-      <p className="font-medium text-red-700">{message}</p>
+    <div role="alert" className="rounded-md border border-danger/40 bg-danger/5 p-4 text-sm">
+      <p className="flex items-start gap-2 font-medium text-danger">
+        <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+        {message}
+      </p>
 
       {issues.length > 0 && (
-        <ul className="mt-2 flex flex-col gap-1 text-neutral-700">
+        <ul className="mt-2 flex flex-col gap-1 pl-6 text-fg">
           {issues.map((issue, i) => (
             <li key={i}>
-              <span className="text-neutral-500">{describeLoc(issue.loc)}:</span> {issue.msg}
+              <span className="text-muted">{describeLoc(issue.loc)}:</span> {issue.msg}
             </li>
           ))}
         </ul>
       )}
 
       {onRetry && (
-        <button type="button" onClick={onRetry} className="btn-secondary mt-3">
+        <button type="button" onClick={onRetry} className="btn-secondary ml-6 mt-3">
           Try again
         </button>
       )}
