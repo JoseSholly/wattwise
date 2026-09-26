@@ -1,11 +1,13 @@
 import { Link } from 'react-router'
 import { ASSUMPTIONS } from '../lib/model'
 
-// Real solar imagery via Unsplash direct image URLs.
+// Real energy imagery via Unsplash direct image URLs.
 const HERO_IMAGE =
   'https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=2000&q=80'
 const SETUP_IMAGE =
   'https://images.unsplash.com/photo-1466611653911-95081537e5b7?auto=format&fit=crop&w=1400&q=80'
+const CTA_IMAGE =
+  'https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?auto=format&fit=crop&w=2000&q=80'
 
 const STEPS = [
   {
@@ -326,14 +328,54 @@ function VersionSplit() {
 
 function CtaBand() {
   return (
-    <section className="bg-fg text-bg">
-      <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 py-20 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <h2 className="display max-w-xl text-3xl font-semibold leading-tight sm:text-4xl">
-          Size a system now.
-        </h2>
-        <Link to="/v1/system" className="btn-accent px-7 text-base">
-          Start sizing
-        </Link>
+    <section className="relative isolate overflow-hidden bg-zinc-900 text-white">
+      <img
+        src={CTA_IMAGE}
+        alt=""
+        aria-hidden="true"
+        loading="lazy"
+        className="absolute inset-0 h-full w-full object-cover opacity-70"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/40"
+      />
+      <div
+        aria-hidden="true"
+        className="noise-overlay pointer-events-none absolute inset-0 opacity-30"
+      />
+
+      <div className="relative mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-6 sm:py-24 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-end lg:gap-16">
+        <div>
+          <p className="label-mono text-white/60">Ready when you are</p>
+          <h2 className="display mt-4 text-4xl font-semibold leading-[1.05] text-white sm:text-5xl md:text-6xl">
+            Stop guessing.<br />
+            Size it with WattWise.
+          </h2>
+          <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-white/80 sm:text-base">
+            One short flow — system, loads, spec. A real specification you can hand to an
+            installer with confidence, in under two minutes.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-4 border-t border-white/20 pt-6 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0">
+          <div>
+            <p className="label-mono text-white/50">Standard sizing</p>
+            <p className="mt-2 text-sm leading-relaxed text-white/75">
+              Best for most homes. One backup time across every appliance, standard component
+              sizes.
+            </p>
+          </div>
+          <Link to="/v1/system" className="btn-accent w-full justify-center px-7 text-base sm:w-auto">
+            Start sizing
+          </Link>
+          <Link
+            to="/v2/system"
+            className="text-sm text-white/70 underline-offset-4 hover:text-white hover:underline"
+          >
+            Or try custom sizing — per-appliance runtime →
+          </Link>
+        </div>
       </div>
     </section>
   )
