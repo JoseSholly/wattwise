@@ -4,27 +4,27 @@
 
 /* Colour tokens as RGB channels so Tailwind opacity modifiers work (bg-surface/80). */
 :root {
-  --bg: 250 250 250;
+  --bg: 250 249 246;
   --surface: 255 255 255;
-  --surface-2: 244 244 245;
-  --line: 228 228 231;
-  --line-strong: 212 212 216;
+  --surface-2: 244 242 236;
+  --line: 226 223 214;
+  --line-strong: 205 200 188;
   --fg: 24 24 27;
   --muted: 82 82 91;
   --subtle: 140 140 150;
   --accent: 251 191 36; /* amber-400: fills */
   --accent-fg: 28 25 23; /* text on accent fills */
-  --accent-ink: 180 83 9; /* amber-700: accent used as text on surfaces */
-  --danger: 220 38 38;
+  --accent-ink: 154 71 6; /* amber-800: accent used as text on surfaces */
+  --danger: 196 42 42;
   color-scheme: light;
 }
 
 .dark {
-  --bg: 9 9 11;
-  --surface: 19 19 22;
-  --surface-2: 28 28 32;
-  --line: 39 39 44;
-  --line-strong: 58 58 64;
+  --bg: 12 12 14;
+  --surface: 22 22 25;
+  --surface-2: 32 32 36;
+  --line: 45 45 50;
+  --line-strong: 66 66 72;
   --fg: 244 244 245;
   --muted: 161 161 170;
   --subtle: 113 113 122;
@@ -44,6 +44,12 @@ body {
   font-feature-settings: 'cv11', 'ss01';
 }
 
+/* Slightly tighter tracking on real display text, without touching UI copy. */
+.display {
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
 @layer components {
   .num {
     @apply font-mono tabular-nums;
@@ -51,7 +57,7 @@ body {
 
   /* Text inputs and selects share one look. 16px on phones stops iOS zooming on focus. */
   .control {
-    @apply h-10 w-full min-w-0 rounded-md border border-line-strong bg-surface px-2.5 font-mono text-base
+    @apply h-11 w-full min-w-0 rounded-md border border-line-strong bg-surface px-3 font-mono text-base
       tabular-nums text-fg placeholder:text-subtle transition-colors
       hover:border-subtle focus:border-accent-ink focus:outline-none focus:ring-2 focus:ring-accent/30
       disabled:cursor-not-allowed disabled:bg-surface2 disabled:text-subtle sm:text-sm;
@@ -60,7 +66,7 @@ body {
   select.control {
     @apply appearance-none bg-no-repeat pr-9 font-sans;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8c96' stroke-width='1.5'/%3E%3C/svg%3E");
-    background-position: right 0.8rem center;
+    background-position: right 0.9rem center;
   }
 
   .control[aria-invalid='true'] {
@@ -68,13 +74,17 @@ body {
   }
 
   .btn {
-    @apply inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 text-sm
+    @apply inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-md px-5 text-sm
       font-medium transition-colors focus-visible:outline focus-visible:outline-2
       focus-visible:outline-offset-2 focus-visible:outline-accent-ink disabled:cursor-not-allowed
       disabled:opacity-60;
   }
 
   .btn-primary {
+    @apply btn bg-fg text-bg hover:bg-fg/90;
+  }
+
+  .btn-accent {
     @apply btn bg-accent text-accent-fg hover:bg-accent/85;
   }
 
@@ -86,17 +96,23 @@ body {
     @apply btn text-muted hover:bg-surface2 hover:text-fg;
   }
 
-  /* Small mono section label, e.g. "01  SYSTEM". */
+  /* Small mono section label. */
   .label-mono {
-    @apply font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-subtle;
+    @apply font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-subtle;
   }
 
   .panel {
     @apply rounded-lg border border-line bg-surface;
   }
 
-  .dot-grid {
-    background-image: radial-gradient(rgb(var(--line-strong)) 1px, transparent 1px);
-    background-size: 22px 22px;
+  /* Subtle noise texture, used as a fixed overlay on the hero to break flat gradients. */
+  .noise-overlay {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 180px 180px;
+  }
+
+  /* Hairline row used in the spec sheet. */
+  .row-hairline {
+    @apply flex items-baseline justify-between gap-4 border-b border-line py-3 last:border-b-0;
   }
 }

@@ -1,17 +1,39 @@
-import { AlertTriangle } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import type { ApiIssue } from '../api/client'
 import { describeLoc } from '../lib/serverErrors'
-import { SpecSheet } from './SpecSheet'
 
-export function EmptyState() {
+function SkeletonRow() {
   return (
-    <div className="flex flex-col gap-4">
-      <SpecSheet />
-      <p className="text-sm text-muted">
-        Add your appliances and press <span className="font-medium text-fg">Calculate</span>. The
-        sizing appears here.
-      </p>
+    <div className="row-hairline">
+      <div className="flex flex-col gap-1.5">
+        <div className="h-3 w-40 animate-shimmer rounded bg-surface2" />
+        <div className="h-2 w-56 animate-shimmer rounded bg-surface2" />
+      </div>
+      <div className="h-4 w-20 animate-shimmer rounded bg-surface2" />
+    </div>
+  )
+}
+
+function SkeletonGroup({ title, rows }: { title: string; rows: number }) {
+  return (
+    <section>
+      <h3 className="label-mono mb-1">{title}</h3>
+      {Array.from({ length: rows }).map((_, i) => (
+        <SkeletonRow key={i} />
+      ))}
+    </section>
+  )
+}
+
+/** Matches the real SpecSheet layout so the transition to success has no shift. */
+export function SkeletonSpecSheet() {
+  return (
+    <div className="flex flex-col gap-8">
+      <SkeletonGroup title="Inverter" rows={2} />
+      <SkeletonGroup title="Battery bank" rows={3} />
+      <SkeletonGroup title="Solar array" rows={2} />
+      <SkeletonGroup title="Charging" rows={2} />
     </div>
   )
 }
@@ -22,26 +44,35 @@ export function EmptyState() {
  */
 export function LoadingState() {
   const [seconds, setSeconds] = useState(0)
-
   useEffect(() => {
     const id = window.setInterval(() => setSeconds((s) => s + 1), 1000)
     return () => window.clearInterval(id)
   }, [])
 
   return (
-    <div className="flex flex-col gap-4">
-      <SpecSheet pending />
-      <div role="status" aria-live="polite" className="text-sm">
-        <p className="flex items-center gap-2">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" aria-hidden="true" />
-          Calculating… <span className="num text-muted">{seconds}s</span>
-        </p>
-        {seconds >= 5 && (
-          <p className="mt-1 text-muted">
-            The API sleeps when idle and can take 30–60 seconds to wake on the first request.
-          </p>
-        )}
+    <div className="flex flex-col gap-6">
+      <div
+        role="status"
+        aria-live="polite"
+        className="flex items-baseline justify-between border-b border-line pb-3 text-sm text-muted"
+      >
+        <span className="flex items-center gap-2">
+          <span
+            className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent-ink"
+            aria-hidden="true"
+          />
+          Calculating
+        </span>
+        <span className="num text-muted">{seconds}s</span>
       </div>
+
+      <SkeletonSpecSheet />
+
+      {seconds >= 5 && (
+        <p className="text-xs leading-relaxed text-muted">
+          The API sleeps when idle and can take 30–60 seconds to wake on the first request.
+        </p>
+      )}
     </div>
   )
 }
@@ -50,31 +81,38 @@ type ErrorStateProps = {
   message: string
   /** Problems the form couldn't attach to a specific field. */
   issues?: ApiIssue[]
+  /** Optional call-to-action, e.g. jump back to the loads step. */
+  action?: ReactNode
   onRetry?: () => void
 }
 
-export function ErrorState({ message, issues = [], onRetry }: ErrorStateProps) {
+export function ErrorState({ message, issues = [], action, onRetry }: ErrorStateProps) {
   return (
-    <div role="alert" className="rounded-md border border-danger/40 bg-danger/5 p-4 text-sm">
-      <p className="flex items-start gap-2 font-medium text-danger">
-        <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
-        {message}
-      </p>
+    <div
+      role="alert"
+      className="border-l-2 border-danger bg-danger/5 py-4 pl-4 pr-4 text-sm"
+    >
+      <p className="font-semibold text-danger">{message}</p>
 
       {issues.length > 0 && (
-        <ul className="mt-2 flex flex-col gap-1 pl-6 text-fg">
+        <ul className="mt-3 flex flex-col gap-1.5 text-fg">
           {issues.map((issue, i) => (
-            <li key={i}>
+            <li key={i} className="text-[13px]">
               <span className="text-muted">{describeLoc(issue.loc)}:</span> {issue.msg}
             </li>
           ))}
         </ul>
       )}
 
-      {onRetry && (
-        <button type="button" onClick={onRetry} className="btn-secondary ml-6 mt-3">
-          Try again
-        </button>
+      {(action || onRetry) && (
+        <div className="mt-4 flex flex-wrap gap-3">
+          {action}
+          {onRetry && (
+            <button type="button" onClick={onRetry} className="btn-secondary">
+              Try again
+            </button>
+          )}
+        </div>
       )}
     </div>
   )

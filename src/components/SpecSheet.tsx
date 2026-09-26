@@ -1,5 +1,4 @@
-import { BatteryFull, Gauge, Sun, Zap, type LucideIcon } from 'lucide-react'
-import { Fragment, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import type { SizingOutput } from '../api/types'
 import { num } from '../lib/format'
 
@@ -12,106 +11,105 @@ export type SpecInput = {
 
 const BATTERY_UNIT_VOLTAGE = 12
 
-function Tile({
-  Icon,
-  label,
-  value,
-  unit,
-  detail,
-  pending,
-}: {
-  Icon: LucideIcon
-  label: string
-  value: ReactNode
-  unit: ReactNode
-  /** Segments wrap between each other, never inside one. */
-  detail: ReactNode[]
-  pending?: boolean
-}) {
+function Row({ label, value, unit, note }: { label: string; value: ReactNode; unit?: string; note?: ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1.5 bg-surface p-3.5 sm:p-4">
-      <div className="label-mono flex items-center gap-1.5">
-        <Icon size={13} aria-hidden="true" className="text-accent-ink" />
-        {label}
+    <div className="row-hairline">
+      <div className="min-w-0">
+        <div className="text-[13px] font-medium text-fg">{label}</div>
+        {note && <div className="mt-0.5 text-xs text-subtle">{note}</div>}
       </div>
-      <div className={`flex items-baseline gap-1.5 ${pending ? 'animate-shimmer' : ''}`}>
-        <span className="num text-2xl font-semibold leading-none tracking-tight sm:text-[28px]">
-          {value}
-        </span>
-        <span className="num truncate text-xs text-muted">{unit}</span>
-      </div>
-      <div className="num min-h-[2lh] text-[11px] leading-snug text-muted">
-        {detail.map((part, i) => (
-          <Fragment key={i}>
-            {i > 0 && <span className="text-subtle"> · </span>}
-            <span className="whitespace-nowrap">{part}</span>
-          </Fragment>
-        ))}
+      <div className="num shrink-0 text-right text-[15px] font-semibold tabular-nums text-fg">
+        {value}
+        {unit && <span className="ml-1 text-xs font-normal text-muted">{unit}</span>}
       </div>
     </div>
   )
 }
 
+function Group({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section>
+      <h3 className="label-mono mb-1">{title}</h3>
+      <div>{children}</div>
+    </section>
+  )
+}
+
 /**
- * The four headline components as a hairline-divided 2×2 grid.
- * Without data it renders the same frame with placeholders (empty/loading states).
+ * Vertical spec-sheet layout: four grouped, hairline-divided sections.
+ * The old 2×2 icon tile grid is gone — typography and structure carry it now.
  */
-export function SpecSheet({ spec, pending = false }: { spec?: SpecInput | null; pending?: boolean }) {
-  const dash = <span className="text-subtle">—</span>
-
-  if (!spec) {
-    return (
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md border border-line bg-line">
-        <Tile Icon={Zap} label="Inverter" value={dash} unit="kVA" detail={['Peak load']} pending={pending} />
-        <Tile Icon={BatteryFull} label="Batteries" value={dash} unit="× Ah" detail={['Bank layout']} pending={pending} />
-        <Tile Icon={Sun} label="Solar" value={dash} unit="× W" detail={['Array size']} pending={pending} />
-        <Tile Icon={Gauge} label="Controller" value={dash} unit="A" detail={['Charge current']} pending={pending} />
-      </div>
-    )
-  }
-
+export function SpecSheet({ spec }: { spec: SpecInput }) {
   const { output, system_voltage, battery_capacity, solar_panel_watt } = spec
-  // 12 V units in series to reach the system voltage, then parallel strings.
   const perString = Math.ceil(system_voltage / BATTERY_UNIT_VOLTAGE)
-  const strings = perString > 0 ? output.numbers_of_batteries / perString : 0
+  const strings = perString > 0 ? Math.round(output.numbers_of_batteries / perString) : 0
   const installed = output.numbers_of_solar_panel * solar_panel_watt
 
   return (
-    <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md border border-line bg-line">
-      <Tile
-        Icon={Zap}
-        label="Inverter"
-        value={num(output.inverter_rating)}
-        unit="kVA"
-        detail={[`${num(output.total_load)} W peak load`]}
-      />
-      <Tile
-        Icon={BatteryFull}
-        label="Batteries"
-        value={num(output.numbers_of_batteries)}
-        unit={<>× {num(battery_capacity)} Ah</>}
-        detail={[
-          ...(strings > 0 ? [`${perString}S × ${num(strings)}P`] : []),
-          `${num(output.total_battery_capacity)} Ah @ ${num(system_voltage)} V`,
-        ]}
-      />
-      <Tile
-        Icon={Sun}
-        label="Solar"
-        value={num(output.numbers_of_solar_panel)}
-        unit={<>× {num(solar_panel_watt)} W</>}
-        detail={[
-          `${num(output.total_solar_panel_capacity_needed)} Wp needed`,
-          `${num(installed)} W installed`,
-        ]}
-      />
-      <Tile
-        Icon={Gauge}
-        label="Controller"
-        value={num(output.controller_current)}
-        unit="A"
-        detail={[`Array ${num(output.total_current)} A`, `@ ${num(system_voltage)} V`]}
-      />
+    <div className="flex flex-col gap-8">
+      <Group title="Inverter">
+        <Row label="Rated capacity" value={num(output.inverter_rating)} unit="kVA" />
+        <Row
+          label="Total connected load"
+          value={num(output.total_load)}
+          unit="W"
+          note="Sum of every appliance running at once"
+        />
+      </Group>
+
+      <Group title="Battery bank">
+        <Row label="System voltage" value={num(system_voltage)} unit="V" />
+        <Row
+          label="Total capacity"
+          value={num(output.total_battery_capacity)}
+          unit="Ah"
+          note={`Sized at ${num(system_voltage)} V, 50% depth of discharge`}
+        />
+        <Row
+          label="Battery count"
+          value={
+            <>
+              {num(output.numbers_of_batteries)}
+              <span className="text-xs font-normal text-muted"> × {num(battery_capacity)} Ah</span>
+            </>
+          }
+          note={strings > 0 ? `${perString} in series × ${strings} in parallel` : undefined}
+        />
+      </Group>
+
+      <Group title="Solar array">
+        <Row
+          label="Required capacity"
+          value={num(output.total_solar_panel_capacity_needed)}
+          unit="Wp"
+          note="To recharge the bank in one sun-day"
+        />
+        <Row
+          label="Panel count"
+          value={
+            <>
+              {num(output.numbers_of_solar_panel)}
+              <span className="text-xs font-normal text-muted"> × {num(solar_panel_watt)} W</span>
+            </>
+          }
+          note={`${num(installed)} W installed`}
+        />
+      </Group>
+
+      <Group title="Charging">
+        <Row
+          label="Array current"
+          value={num(output.total_current)}
+          unit="A"
+          note={`Into a ${num(system_voltage)} V system`}
+        />
+        <Row
+          label="Charge controller"
+          value={num(output.controller_current)}
+          unit="A"
+          note="1.25× array current headroom"
+        />
+      </Group>
     </div>
   )
 }

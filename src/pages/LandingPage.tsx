@@ -1,263 +1,340 @@
-import { ArrowRight, Check } from 'lucide-react'
-import { useEffect, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { SpecSheet, type SpecInput } from '../components/SpecSheet'
-import { API_DOCS_URL } from '../lib/links'
 import { ASSUMPTIONS } from '../lib/model'
 
-/** Scenario 1 from the API README: 525 W home, 6 h backup, 24 V, 200 Ah, 400 W panels. */
-const SAMPLE: SpecInput = {
-  system_voltage: 24,
-  battery_capacity: 200,
-  solar_panel_watt: 400,
-  output: {
-    total_load: 525,
-    inverter_rating: 0.66,
-    total_battery_capacity: 328.12,
-    numbers_of_batteries: 4,
-    total_solar_panel_capacity_needed: 656.25,
-    numbers_of_solar_panel: 2,
-    total_current: 33.33,
-    controller_current: 41.67,
-  },
-}
+// Real solar imagery via Unsplash direct image URLs.
+const HERO_IMAGE =
+  'https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=2000&q=80'
+const SETUP_IMAGE =
+  'https://images.unsplash.com/photo-1466611653911-95081537e5b7?auto=format&fit=crop&w=1400&q=80'
 
-const STEPS: { title: string; body: string; formulas: string[] }[] = [
+const STEPS = [
   {
-    title: 'List your loads',
-    body: 'Pick each appliance from the catalogue with its quantity and wattage.',
-    formulas: ['P = Σ watts × qty'],
+    title: 'Configure your system',
+    body:
+      'Choose a system voltage, battery size and solar panel size. If you already own equipment, enter what you have.',
   },
   {
-    title: 'Daily energy',
-    body: 'v1 runs everything for one backup time. v2 uses hours per appliance.',
-    formulas: ['v1  E = P × t', 'v2  E = Σ Pᵢ × tᵢ'],
+    title: 'Add your loads',
+    body:
+      'List the appliances you want to run during an outage and how long each should run for. Fridges keep going overnight; TVs only need a few hours.',
   },
   {
-    title: 'Size components',
-    body: 'Inverter for the peak load, battery bank and array for the energy.',
-    formulas: ['kVA = P ÷ 800', 'Ah = E ÷ (V × 0.4)', 'Wp = E ÷ 4.8'],
-  },
-  {
-    title: 'Count and rate',
-    body: 'Whole batteries and panels, and a controller with headroom.',
-    formulas: ['n = ⌈V ÷ 12⌉ × ⌈Ah ÷ C⌉', 'N = ⌈Wp ÷ W⌉', 'I = N × W × 1.25 ÷ V'],
+    title: 'Review your specification',
+    body:
+      'Get the required inverter capacity, battery bank, solar array and charge controller current, formatted as a professional spec sheet.',
   },
 ]
 
-const COMPARE: { label: string; v1: string; v2: string }[] = [
-  { label: 'Backup time', v1: 'One value, 1–24 h', v2: 'Per appliance, up to 24 h' },
-  { label: 'System voltage', v1: '12, 24 or 48 V', v2: 'Any multiple of 12, to 240 V' },
-  { label: 'Battery (12 V unit)', v1: '150, 200, 220, 250 Ah', v2: '1–5,000 Ah' },
-  { label: 'Solar panel', v1: '300, 350, 400, 450 W', v2: '1–1,000 W' },
-  { label: 'Appliance watts', v1: 'Whole watts', v2: 'Decimals allowed' },
+const OUTPUTS = [
+  {
+    label: 'Inverter capacity',
+    unit: 'kVA',
+    body:
+      'The AC output your inverter must sustain when every appliance runs at the same moment, sized with a power-factor and efficiency headroom.',
+  },
+  {
+    label: 'Battery bank',
+    unit: 'Ah · count',
+    body:
+      'The total ampere-hours you need at the chosen system voltage, converted into a series-parallel arrangement of standard batteries.',
+  },
+  {
+    label: 'Solar array',
+    unit: 'W · count',
+    body:
+      'The panel wattage required to recharge the bank in a typical sun-day, converted into a whole number of your chosen panel size.',
+  },
+  {
+    label: 'Charge controller',
+    unit: 'A',
+    body:
+      'The DC current your charge controller must accept, with a 1.25× headroom over the array’s installed current.',
+  },
 ]
 
-function SectionHeading({ eyebrow, title, children }: { eyebrow: string; title: string; children?: ReactNode }) {
+export function LandingPage() {
   return (
-    <div className="mb-8 max-w-2xl">
-      <p className="label-mono text-accent-ink">{eyebrow}</p>
-      <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h2>
-      {children && <p className="mt-3 text-[15px] leading-relaxed text-muted">{children}</p>}
-    </div>
+    <>
+      <Hero />
+      <HowItWorks />
+      <Outputs />
+      <TechnicalExplanation />
+      <VersionSplit />
+      <CtaBand />
+    </>
   )
 }
 
-export function LandingPage() {
-  useEffect(() => {
-    document.title = 'Watt Wise · Solar backup sizing'
-  }, [])
-
+function Hero() {
   return (
-    <>
-      {/* Hero */}
-      <section className="relative overflow-hidden border-b border-line">
-        <div
-          aria-hidden="true"
-          className="dot-grid pointer-events-none absolute inset-0 opacity-60 [mask-image:linear-gradient(to_bottom,black,transparent)]"
-        />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[minmax(0,1fr)_28rem] lg:py-24">
+    <section className="relative isolate -mt-14 flex min-h-[100dvh] items-end overflow-hidden bg-zinc-900 pt-14 text-white">
+      <img
+        src={HERO_IMAGE}
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 h-full w-full object-cover opacity-70"
+      />
+      {/* Warm scrim + gradient to keep text readable regardless of the underlying photo. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black/85"
+      />
+      <div
+        aria-hidden="true"
+        className="noise-overlay pointer-events-none absolute inset-0 opacity-40"
+      />
+
+      <div className="relative mx-auto w-full max-w-6xl px-4 pb-16 pt-24 sm:px-6 sm:pb-28 sm:pt-40">
+        <p className="label-mono text-white/70">Backup power sizing · WattWise</p>
+        <h1 className="display mt-5 max-w-4xl text-[34px] font-semibold leading-[1.05] tracking-tight text-white sm:mt-6 sm:text-6xl md:text-7xl">
+          Size your backup power system with confidence.
+        </h1>
+        <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/80 sm:mt-6 sm:text-xl">
+          Tell WattWise which appliances you run and how long you need them to last during an
+          outage. Get an inverter, battery bank, solar array and charge-controller spec you can
+          take straight to an installer.
+        </p>
+
+        <div className="mt-8 flex flex-col items-stretch gap-3 sm:mt-10 sm:flex-row sm:items-center sm:gap-4">
+          <Link to="/v1/system" className="btn-accent px-7 text-base">
+            Start sizing
+          </Link>
+          <a
+            href="#how-it-works"
+            className="text-center text-sm text-white/70 hover:text-white sm:text-left"
+          >
+            How it works ↓
+          </a>
+        </div>
+
+        <dl className="mt-12 grid max-w-3xl grid-cols-2 gap-x-6 gap-y-4 border-t border-white/15 pt-6 text-white/80 sm:mt-16 sm:grid-cols-4 sm:gap-x-8 sm:pt-8">
           <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
-              <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />
-              Inverter · battery · solar · controller
+            <dt className="label-mono text-white/50">Inverter</dt>
+            <dd className="num mt-1 text-lg font-semibold text-white">
+              0.66 <span className="text-xs font-normal text-white/60">kVA</span>
+            </dd>
+          </div>
+          <div>
+            <dt className="label-mono text-white/50">Batteries</dt>
+            <dd className="num mt-1 text-lg font-semibold text-white">
+              4 <span className="text-xs font-normal text-white/60">× 200 Ah</span>
+            </dd>
+          </div>
+          <div>
+            <dt className="label-mono text-white/50">Solar</dt>
+            <dd className="num mt-1 text-lg font-semibold text-white">
+              2 <span className="text-xs font-normal text-white/60">× 400 W</span>
+            </dd>
+          </div>
+          <div>
+            <dt className="label-mono text-white/50">Controller</dt>
+            <dd className="num mt-1 text-lg font-semibold text-white">
+              41.67 <span className="text-xs font-normal text-white/60">A</span>
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+  )
+}
+
+function HowItWorks() {
+  return (
+    <section id="how-it-works" className="border-b border-line bg-bg">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
+        <div className="grid gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+          <div className="lg:sticky lg:top-24 lg:self-start">
+            <p className="label-mono">How it works</p>
+            <h2 className="display mt-4 text-3xl font-semibold text-fg sm:text-4xl">
+              Three focused steps, one considered result.
+            </h2>
+            <p className="mt-5 max-w-md text-[15px] leading-relaxed text-muted">
+              WattWise splits the calculation into a short guided flow. You can move back and
+              forth between steps at any time — your inputs are preserved.
             </p>
-            <h1 className="mt-5 max-w-xl text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl">
-              Size a solar backup system from the appliances you run.
-            </h1>
-            <p className="mt-5 max-w-lg text-base leading-relaxed text-muted sm:text-lg">
-              List what you want to keep on during an outage. Watt Wise returns the inverter
-              rating, how many batteries and panels you need, and the charge controller current,
-              with every step of the maths shown.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link to="/v1" className="btn-primary h-11 px-5">
-                Open v1 calculator
-                <ArrowRight size={16} aria-hidden="true" />
-              </Link>
-              <Link to="/v2" className="btn-secondary h-11 px-5">
-                v2: hours per appliance
-              </Link>
-            </div>
-            <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">
-              {['No sign-up', 'Nothing is stored', '50 common appliances'].map((item) => (
-                <li key={item} className="flex items-center gap-1.5">
-                  <Check size={14} className="text-accent-ink" aria-hidden="true" />
-                  {item}
-                </li>
-              ))}
-            </ul>
           </div>
 
-          <figure className="panel overflow-hidden shadow-[0_1px_0_rgb(var(--line)),0_24px_48px_-24px_rgb(0_0_0/0.25)]">
-            <div className="flex h-11 items-center justify-between border-b border-line bg-surface2/60 px-4">
-              <span className="label-mono">Sample spec sheet</span>
-              <span className="font-mono text-[11px] text-subtle">24 V · 6 h</span>
-            </div>
-            <div className="p-4">
-              <SpecSheet spec={SAMPLE} />
-            </div>
-            <figcaption className="border-t border-line px-4 py-3 text-xs leading-relaxed text-muted">
-              4 LED bulbs, 2 fans, a TV, a fridge and a laptop (525 W) on 200 Ah batteries and
-              400 W panels. The worked example from the API documentation.
-            </figcaption>
-          </figure>
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section className="border-b border-line">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-          <SectionHeading eyebrow="How it works" title="From appliance list to spec sheet">
-            Both versions share one sizing model. They differ only in how daily energy is added up.
-          </SectionHeading>
-
-          <ol className="grid gap-px overflow-hidden rounded-lg border border-line bg-line md:grid-cols-2 lg:grid-cols-4">
+          <ol className="flex flex-col divide-y divide-line border-t border-line">
             {STEPS.map((step, i) => (
-              <li key={step.title} className="flex flex-col bg-surface p-5">
-                <span className="font-mono text-xs text-accent-ink">
+              <li key={step.title} className="grid grid-cols-[3.5rem_1fr] items-baseline gap-6 py-8">
+                <span className="num text-xl font-semibold tabular-nums text-accent-ink">
                   {String(i + 1).padStart(2, '0')}
                 </span>
-                <h3 className="mt-3 font-semibold">{step.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted">{step.body}</p>
-                <div className="mt-auto pt-5">
-                  <div className="flex flex-col gap-1 rounded-md border border-line bg-surface2/60 px-3 py-2.5 font-mono text-xs">
-                    {step.formulas.map((f) => (
-                      <code key={f} className="whitespace-pre">
-                        {f}
-                      </code>
-                    ))}
-                  </div>
+                <div>
+                  <h3 className="display text-2xl font-semibold text-fg sm:text-3xl">
+                    {step.title}
+                  </h3>
+                  <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">
+                    {step.body}
+                  </p>
                 </div>
               </li>
             ))}
           </ol>
-          <p className="mt-4 font-mono text-xs text-subtle">
-            P load (W) · E energy (Wh) · t hours · V system voltage · C battery Ah · W panel watts
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function Outputs() {
+  return (
+    <section className="relative border-b border-line">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
+        <div className="max-w-3xl">
+          <p className="label-mono">What WattWise calculates</p>
+          <h2 className="display mt-4 text-3xl font-semibold text-fg sm:text-4xl">
+            A specification a real installer can read.
+          </h2>
+          <p className="mt-5 text-[15px] leading-relaxed text-muted">
+            Four numbers that fully describe your system. No dashboards, no marketing metrics.
           </p>
         </div>
-      </section>
 
-      {/* v1 vs v2 */}
-      <section className="border-b border-line">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-          <SectionHeading eyebrow="Two calculators" title="Pick the model that fits">
-            If every appliance gets the same hours, v1 and v2 return identical results.
-          </SectionHeading>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            {(['v1', 'v2'] as const).map((version) => (
-              <div key={version} className="panel flex flex-col overflow-hidden">
-                <div className="border-b border-line p-5">
-                  <p className="font-mono text-xs text-accent-ink">{version}</p>
-                  <h3 className="mt-1 text-lg font-semibold">
-                    {version === 'v1' ? 'Single backup time' : 'Per-appliance backup time'}
-                  </h3>
-                  <p className="mt-1 text-sm text-muted">
-                    {version === 'v1'
-                      ? 'Quick estimate with standard component sizes.'
-                      : 'Fridge overnight, TV for the evening. Any component size.'}
-                  </p>
-                </div>
-                <dl className="flex-1 px-5 py-2">
-                  {COMPARE.map((row) => (
-                    <div
-                      key={row.label}
-                      className="flex justify-between gap-4 border-b border-line py-2.5 text-sm last:border-b-0"
-                    >
-                      <dt className="text-muted">{row.label}</dt>
-                      <dd className="num text-right text-[13px]">{row[version]}</dd>
-                    </div>
-                  ))}
-                </dl>
-                <div className="border-t border-line bg-surface2/60 p-4">
-                  <Link
-                    to={`/${version}`}
-                    className={`${version === 'v1' ? 'btn-primary' : 'btn-secondary'} w-full`}
-                  >
-                    Open {version} calculator
-                    <ArrowRight size={15} aria-hidden="true" />
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Assumptions */}
-      <section className="border-b border-line">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-          <SectionHeading eyebrow="Model constants" title="The assumptions behind every number">
-            Conservative values for lead-acid and tubular batteries. Results are rounded to two
-            decimals; battery and panel counts always round up.
-          </SectionHeading>
-          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line md:grid-cols-4">
-            {ASSUMPTIONS.map(([label, value]) => (
-              <div key={label} className="bg-surface p-4">
-                <dt className="text-xs text-muted">{label}</dt>
-                <dd className="num mt-1.5 text-lg font-semibold">{value}</dd>
-              </div>
-            ))}
-            <div className="bg-surface p-4">
-              <dt className="text-xs text-muted">Recharge</dt>
-              <dd className="num mt-1.5 text-lg font-semibold">Once a day</dd>
+        <dl className="mt-16 grid gap-x-12 gap-y-14 md:grid-cols-2">
+          {OUTPUTS.map((out, i) => (
+            <div key={out.label} className={i % 2 === 1 ? 'md:mt-16' : ''}>
+              <dt className="flex items-baseline justify-between gap-4 border-b border-line pb-3">
+                <span className="text-lg font-semibold text-fg">{out.label}</span>
+                <span className="num text-sm text-muted">{out.unit}</span>
+              </dt>
+              <dd className="mt-4 max-w-md text-[15px] leading-relaxed text-muted">{out.body}</dd>
             </div>
-          </dl>
-        </div>
-      </section>
+          ))}
+        </dl>
+      </div>
+    </section>
+  )
+}
 
-      {/* Closing CTA */}
-      <section>
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-          <div className="panel flex flex-col gap-6 p-6 sm:p-8 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-xl font-semibold tracking-tight">Have your appliance list ready?</h2>
-              <p className="mt-1 text-sm text-muted">
-                It takes a minute. The API is also open if you'd rather call it directly:{' '}
-                <a
-                  href={API_DOCS_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-fg underline decoration-line-strong underline-offset-4 hover:decoration-fg"
-                >
-                  API docs
-                </a>
-                .
+function TechnicalExplanation() {
+  return (
+    <section className="border-b border-line bg-surface2/50">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
+        <div className="grid gap-16 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+          <div>
+            <p className="label-mono">How the calculation works</p>
+            <h2 className="display mt-4 text-3xl font-semibold text-fg sm:text-4xl">
+              A transparent sizing model, no black box.
+            </h2>
+            <div className="mt-6 flex max-w-2xl flex-col gap-4 text-[15px] leading-relaxed text-muted">
+              <p>
+                WattWise sums the peak load of every appliance you enter, applies a power-factor
+                and inverter-efficiency correction, then rounds up to give an inverter rating in
+                kVA.
+              </p>
+              <p>
+                Daily energy is computed as watts × hours (either shared across all loads or
+                per-appliance). That energy determines the ampere-hours the battery bank must
+                store at your chosen system voltage, sized with a 50% depth-of-discharge margin.
+              </p>
+              <p>
+                The solar array is sized to fully recharge the bank in one sun-day, and the
+                charge controller current is scaled by 1.25× the installed array current for
+                headroom.
               </p>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Link to="/v1" className="btn-primary h-11 px-5">
-                Start with v1
-                <ArrowRight size={16} aria-hidden="true" />
-              </Link>
-              <Link to="/v2" className="btn-secondary h-11 px-5">
-                Use v2
-              </Link>
-            </div>
+          </div>
+
+          <div className="lg:pt-16">
+            <img
+              src={SETUP_IMAGE}
+              alt="Battery bank and inverter installed in a residential utility room."
+              className="mb-8 aspect-[4/3] w-full rounded-md object-cover"
+              loading="lazy"
+            />
+            <p className="label-mono mb-3">Model constants</p>
+            <dl className="flex flex-col rounded-md border border-line bg-surface">
+              {ASSUMPTIONS.map(([label, value]) => (
+                <div
+                  key={label}
+                  className="flex items-baseline justify-between border-b border-line px-4 py-3 text-sm last:border-b-0"
+                >
+                  <dt className="text-muted">{label}</dt>
+                  <dd className="num font-medium text-fg">{value}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
         </div>
-      </section>
-    </>
+      </div>
+    </section>
+  )
+}
+
+function VersionSplit() {
+  return (
+    <section className="border-b border-line">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
+        <div className="max-w-2xl">
+          <p className="label-mono">Which flow fits you</p>
+          <h2 className="display mt-4 text-3xl font-semibold text-fg sm:text-4xl">
+            Two sizing modes, same accurate model.
+          </h2>
+          <p className="mt-5 text-[15px] leading-relaxed text-muted">
+            The standard flow uses one runtime across your appliances and picks components from a
+            catalogue of common ratings. The custom flow lets each appliance define its own
+            runtime and accepts any equipment specification you own.
+          </p>
+        </div>
+
+        <div className="mt-14 grid gap-6 md:grid-cols-2">
+          <Link
+            to="/v1/system"
+            className="group flex flex-col justify-between rounded-lg border border-line bg-surface p-8 transition-colors hover:border-fg/30 sm:p-10"
+          >
+            <div>
+              <p className="label-mono">Version one</p>
+              <h3 className="display mt-3 text-2xl font-semibold text-fg">Standard sizing</h3>
+              <p className="mt-3 text-[15px] leading-relaxed text-muted">
+                Everything runs for the same backup time. Battery, panel and voltage picked from
+                common standard sizes.
+              </p>
+            </div>
+            <div className="mt-8 flex items-center justify-between border-t border-line pt-4">
+              <span className="text-sm text-muted">Best for most homes</span>
+              <span className="text-sm font-medium text-accent-ink group-hover:text-fg">
+                Start →
+              </span>
+            </div>
+          </Link>
+
+          <Link
+            to="/v2/system"
+            className="group flex flex-col justify-between rounded-lg border border-line bg-surface p-8 transition-colors hover:border-fg/30 sm:p-10"
+          >
+            <div>
+              <p className="label-mono">Version two</p>
+              <h3 className="display mt-3 text-2xl font-semibold text-fg">Custom sizing</h3>
+              <p className="mt-3 text-[15px] leading-relaxed text-muted">
+                Every appliance runs for its own number of hours. Any 12 V-multiple system
+                voltage, any battery or panel rating.
+              </p>
+            </div>
+            <div className="mt-8 flex items-center justify-between border-t border-line pt-4">
+              <span className="text-sm text-muted">Best for mixed loads or off-grid</span>
+              <span className="text-sm font-medium text-accent-ink group-hover:text-fg">
+                Start →
+              </span>
+            </div>
+          </Link>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function CtaBand() {
+  return (
+    <section className="bg-fg text-bg">
+      <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 py-20 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <h2 className="display max-w-xl text-3xl font-semibold leading-tight sm:text-4xl">
+          Size a system now.
+        </h2>
+        <Link to="/v1/system" className="btn-accent px-7 text-base">
+          Start sizing
+        </Link>
+      </div>
+    </section>
   )
 }

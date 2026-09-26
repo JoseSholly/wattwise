@@ -5,10 +5,12 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import { Layout } from './components/Layout'
+import { V1Wizard, V2Wizard } from './components/wizard/CalculatorWizard'
+import { LoadsStep } from './components/wizard/LoadsStep'
+import { SpecStep } from './components/wizard/SpecStep'
+import { SystemStep } from './components/wizard/SystemStep'
 import './index.css'
 import { LandingPage } from './pages/LandingPage'
-import { V1Page } from './pages/V1Page'
-import { V2Page } from './pages/V2Page'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,8 +25,21 @@ createRoot(document.getElementById('root')!).render(
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<LandingPage />} />
-            <Route path="v1" element={<V1Page />} />
-            <Route path="v2" element={<V2Page />} />
+
+            <Route path="v1" element={<V1Wizard />}>
+              <Route index element={<Navigate to="system" replace />} />
+              <Route path="system" element={<SystemStep />} />
+              <Route path="loads" element={<LoadsStep />} />
+              <Route path="spec" element={<SpecStep />} />
+            </Route>
+
+            <Route path="v2" element={<V2Wizard />}>
+              <Route index element={<Navigate to="system" replace />} />
+              <Route path="system" element={<SystemStep />} />
+              <Route path="loads" element={<LoadsStep />} />
+              <Route path="spec" element={<SpecStep />} />
+            </Route>
+
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

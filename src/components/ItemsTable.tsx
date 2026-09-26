@@ -1,32 +1,28 @@
-import { Plus, Trash2 } from 'lucide-react'
-import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
-import { useAppliances } from '../api/appliances'
+import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { isNum, num } from '../lib/format'
 import { blankItem } from '../lib/schemas'
-import { Field, Select } from './Field'
-import { Panel } from './Panel'
+import { ApplianceCombobox } from './ApplianceCombobox'
+import { Field } from './Field'
 
 type Row = { id: number; quantity: number; power_rating: number; backup_time?: number }
 type ItemsForm = { items: Row[] }
 
 type Props = {
-  index: string
   /** v2: every appliance has its own backup time. */
   withBackupTime?: boolean
-  /** v1: the single backup time from the System panel, for the live energy estimate. */
+  /** v1: the single backup time from the System step, for the live energy estimate. */
   sharedHours?: number
 }
 
 const MAX_ITEMS = 100
 
-/** Watts and watt-hours for one row from what's typed so far; null when incomplete. */
 function rowLoad(row: Row | undefined, hours: number | undefined) {
   if (!row || !isNum(row.quantity) || !isNum(row.power_rating)) return null
   const watts = row.quantity * row.power_rating
   return { watts, wh: isNum(hours) ? watts * hours : null }
 }
 
-export function ItemsTable({ index, withBackupTime = false, sharedHours }: Props) {
+export function ItemsTable({ withBackupTime = false, sharedHours }: Props) {
   const {
     control,
     register,
@@ -34,70 +30,66 @@ export function ItemsTable({ index, withBackupTime = false, sharedHours }: Props
   } = useFormContext<ItemsForm>()
   const { fields, append, remove } = useFieldArray({ control, name: 'items' })
   const rows = useWatch({ control, name: 'items' })
-  const appliances = useAppliances()
 
   const loads = fields.map((_, i) =>
     rowLoad(rows?.[i], withBackupTime ? rows?.[i]?.backup_time : sharedHours),
   )
   const complete = loads.every((l) => l !== null)
   const totalW = loads.reduce((sum, l) => sum + (l?.watts ?? 0), 0)
-  const totalWh = complete && loads.every((l) => l?.wh !== null)
-    ? loads.reduce((sum, l) => sum + (l?.wh ?? 0), 0)
-    : null
+  const totalWh =
+    complete && loads.every((l) => l?.wh !== null)
+      ? loads.reduce((sum, l) => sum + (l?.wh ?? 0), 0)
+      : null
 
   // Desktop grid columns. Static strings so Tailwind can see them.
   const cols = withBackupTime
-    ? 'sm:grid-cols-[1.75rem_minmax(0,1fr)_4.5rem_6.5rem_5.5rem_2.25rem] xl:grid-cols-[1.75rem_minmax(0,1fr)_4.5rem_6.5rem_5.5rem_6.5rem_2.25rem]'
-    : 'sm:grid-cols-[1.75rem_minmax(0,1fr)_4.5rem_7rem_2.25rem] xl:grid-cols-[1.75rem_minmax(0,1fr)_4.5rem_7rem_6.5rem_2.25rem]'
+    ? 'sm:grid-cols-[1.75rem_minmax(0,1fr)_4.5rem_6.5rem_5.5rem_6.5rem_auto] xl:gap-x-4'
+    : 'sm:grid-cols-[1.75rem_minmax(0,1fr)_4.5rem_7rem_6.5rem_auto] xl:gap-x-4'
 
   const listError = errors.items?.root?.message ?? errors.items?.message
 
   return (
-    <Panel
-      index={index}
-      title="Loads"
-      aside={
-        <span className="font-mono text-[11px] text-subtle">
-          {fields.length}/{MAX_ITEMS}
-        </span>
-      }
-      footer={
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <button
-            type="button"
-            onClick={() => append({ ...blankItem })}
-            disabled={fields.length >= MAX_ITEMS}
-            className="btn-secondary self-start"
-          >
-            <Plus size={15} aria-hidden="true" />
-            Add appliance
-          </button>
-          <dl className="grid grid-cols-2 gap-x-6 text-right sm:flex sm:gap-6">
-            <div className="text-left sm:text-right">
-              <dt className="label-mono">Connected load</dt>
-              <dd className="num text-sm font-semibold">{num(totalW)} W</dd>
-            </div>
-            <div>
-              <dt className="label-mono">Daily energy</dt>
-              <dd className="num text-sm font-semibold">
-                {totalWh === null ? <span className="text-subtle">—</span> : `${num(totalWh)} Wh`}
-              </dd>
-            </div>
-          </dl>
+    <div className="flex flex-col gap-5">
+      {/* Totals bar. Stacks on mobile so the totals never overflow. */}
+      <div className="flex flex-col gap-3 border-b border-line pb-4 sm:flex-row sm:items-baseline sm:justify-between">
+        <div className="label-mono">
+          {fields.length} appliance{fields.length === 1 ? '' : 's'}
+          <span className="mx-2 text-line-strong">/</span>
+          <span className="text-subtle">{MAX_ITEMS} max</span>
         </div>
-      }
-    >
+        <dl className="grid grid-cols-2 gap-x-6 sm:flex sm:items-baseline sm:gap-6 sm:text-right">
+          <div>
+            <dt className="label-mono">Connected</dt>
+            <dd className="num mt-1 text-sm font-semibold text-fg">
+              {num(totalW)} <span className="text-xs font-normal text-muted">W</span>
+            </dd>
+          </div>
+          <div>
+            <dt className="label-mono">Daily energy</dt>
+            <dd className="num mt-1 text-sm font-semibold text-fg">
+              {totalWh === null ? (
+                <span className="text-subtle">—</span>
+              ) : (
+                <>
+                  {num(totalWh)} <span className="text-xs font-normal text-muted">Wh</span>
+                </>
+              )}
+            </dd>
+          </div>
+        </dl>
+      </div>
+
       {/* Column header, table layout only. */}
       <div
         aria-hidden="true"
-        className={`label-mono -mt-1 mb-1 hidden gap-x-3 border-b border-line pb-2 sm:grid ${cols}`}
+        className={`label-mono -mb-2 hidden gap-x-3 border-b border-line pb-2 sm:grid ${cols}`}
       >
         <span>#</span>
         <span>Appliance</span>
         <span>Qty</span>
         <span>Watts each</span>
         {withBackupTime && <span>Hours/day</span>}
-        <span className="hidden text-right xl:block">Load</span>
+        <span className="text-right">Load</span>
         <span />
       </div>
 
@@ -120,56 +112,44 @@ export function ItemsTable({ index, withBackupTime = false, sharedHours }: Props
           ) : (
             <span className="text-subtle">—</span>
           )
-          const removeLabel = `Remove appliance ${i + 1}`
 
           return (
             <li
               key={field.id}
-              className={`rounded-md border border-line bg-surface2/40 p-3 sm:grid sm:items-start sm:gap-x-3 sm:rounded-none sm:border-0 sm:border-b sm:bg-transparent sm:px-0 sm:py-2.5 sm:last:border-b-0 ${cols}`}
+              className={`min-w-0 rounded-md border border-line bg-surface2/40 p-3.5 sm:grid sm:items-start sm:gap-x-3 sm:rounded-none sm:border-0 sm:border-b sm:bg-transparent sm:p-0 sm:py-3 sm:last:border-b-0 ${cols}`}
             >
-              {/* Card header on phones; first three grid cells on wider screens. */}
-              <div className="flex items-center gap-2 sm:contents">
-                <span className="grid h-10 w-8 shrink-0 place-items-center rounded border border-line bg-surface font-mono text-xs text-muted sm:w-auto sm:border-0 sm:bg-transparent sm:text-subtle">
-                  {i + 1}
+              {/* Card top row on phones: index + appliance select. Remove sits below. */}
+              <div className="flex items-center gap-2.5 sm:contents">
+                <span className="grid h-11 w-9 shrink-0 place-items-center rounded border border-line bg-surface font-mono text-xs text-muted sm:w-auto sm:border-0 sm:bg-transparent sm:text-subtle">
+                  {String(i + 1).padStart(2, '0')}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <Select
-                    id={`${idBase}-id`}
-                    label={`Appliance ${i + 1}`}
-                    hideLabel
-                    disabled={!appliances.data}
-                    error={rowErrors?.id?.message}
-                    defaultValue=""
-                    {...register(`items.${i}.id`, { valueAsNumber: true })}
-                  >
-                    <option value="" disabled>
-                      {appliances.isPending
-                        ? 'Loading appliances…'
-                        : appliances.isError
-                          ? 'Appliances unavailable'
-                          : 'Choose appliance…'}
-                    </option>
-                    {appliances.data?.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name}
-                      </option>
-                    ))}
-                  </Select>
+                  <Controller
+                    control={control}
+                    name={`items.${i}.id`}
+                    render={({ field: idField }) => (
+                      <ApplianceCombobox
+                        id={`${idBase}-id`}
+                        label={`Appliance ${i + 1}`}
+                        hideLabel
+                        value={
+                          typeof idField.value === 'number' && !Number.isNaN(idField.value)
+                            ? idField.value
+                            : undefined
+                        }
+                        onChange={(next) => idField.onChange(next)}
+                        onBlur={idField.onBlur}
+                        error={rowErrors?.id?.message}
+                      />
+                    )}
+                  />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => remove(i)}
-                  disabled={!canRemove}
-                  aria-label={removeLabel}
-                  className="grid h-10 w-10 shrink-0 place-items-center self-start rounded-md border border-line bg-surface text-muted hover:text-danger disabled:opacity-40 sm:hidden"
-                >
-                  <Trash2 size={15} aria-hidden="true" />
-                </button>
               </div>
 
-              {/* Fixed columns on phones so every card lines up; qty needs the least room. */}
               <div
-                className={`mt-3 grid gap-2.5 sm:contents ${withBackupTime ? 'grid-cols-[4rem_minmax(0,1fr)_minmax(0,1fr)]' : 'grid-cols-2'}`}
+                className={`mt-3 grid gap-2.5 sm:contents ${
+                  withBackupTime ? 'grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]' : 'grid-cols-2'
+                }`}
               >
                 <Field
                   id={`${idBase}-quantity`}
@@ -212,20 +192,35 @@ export function ItemsTable({ index, withBackupTime = false, sharedHours }: Props
                 )}
               </div>
 
-              <p className="num mt-2.5 text-right text-xs text-muted sm:hidden xl:mt-0 xl:flex xl:h-10 xl:flex-col xl:items-end xl:justify-center xl:leading-tight">
+              {/* Mobile: subtotal + Remove sit on the same line below the inputs. */}
+              <div className="mt-3 flex items-center justify-between gap-3 sm:hidden">
+                <p className="num text-xs text-muted">{subtotal}</p>
+                {canRemove && (
+                  <button
+                    type="button"
+                    onClick={() => remove(i)}
+                    aria-label={`Remove appliance ${i + 1}`}
+                    className="rounded px-2 py-1 text-xs font-medium text-muted transition-colors hover:text-danger"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+
+              {/* Desktop: subtotal and Remove sit in their own grid cells. */}
+              <p className="num hidden text-right text-xs text-muted sm:flex sm:h-11 sm:flex-col sm:items-end sm:justify-center sm:leading-tight">
                 {subtotal}
               </p>
 
-              <div className="hidden h-10 items-center justify-center sm:flex">
+              <div className="hidden h-11 items-center justify-end sm:flex">
                 <button
                   type="button"
                   onClick={() => remove(i)}
                   disabled={!canRemove}
-                  title="Remove"
-                  aria-label={removeLabel}
-                  className="grid h-8 w-8 place-items-center rounded-md text-subtle transition-colors hover:bg-surface2 hover:text-danger disabled:invisible"
+                  aria-label={`Remove appliance ${i + 1}`}
+                  className="rounded px-2 py-1 text-xs font-medium text-subtle transition-colors hover:text-danger disabled:opacity-30"
                 >
-                  <Trash2 size={15} aria-hidden="true" />
+                  Remove
                 </button>
               </div>
             </li>
@@ -233,20 +228,18 @@ export function ItemsTable({ index, withBackupTime = false, sharedHours }: Props
         })}
       </ul>
 
-      {appliances.isError && (
-        <p className="mt-3 text-sm text-danger">
-          Couldn’t load the appliance list: {appliances.error.message}{' '}
-          <button
-            type="button"
-            onClick={() => appliances.refetch()}
-            className="font-medium underline underline-offset-2"
-          >
-            Retry
-          </button>
-        </p>
-      )}
+      <div>
+        <button
+          type="button"
+          onClick={() => append({ ...blankItem })}
+          disabled={fields.length >= MAX_ITEMS}
+          className="btn-secondary w-full sm:w-auto"
+        >
+          Add appliance
+        </button>
+      </div>
 
-      {listError && <p className="mt-3 text-sm text-danger">{listError}</p>}
-    </Panel>
+      {listError && <p className="text-sm text-danger">{listError}</p>}
+    </div>
   )
 }
