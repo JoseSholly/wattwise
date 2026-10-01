@@ -1,13 +1,13 @@
 import { Link } from 'react-router'
+import { EnergyTipsCarousel } from '../components/EnergyTipsCarousel'
 import { Reveal } from '../components/Reveal'
+import { SolarFlowDiagram } from '../components/SolarFlowDiagram'
 import { useAppliances } from '../api/appliances'
 import { ASSUMPTIONS } from '../lib/model'
 
 // Real energy imagery via Unsplash direct image URLs.
 const HERO_IMAGE =
   'https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=2000&q=80'
-const SETUP_IMAGE =
-  'https://images.unsplash.com/photo-1466611653911-95081537e5b7?auto=format&fit=crop&w=1400&q=80'
 const CTA_IMAGE =
   'https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?auto=format&fit=crop&w=2000&q=80'
 
@@ -67,6 +67,7 @@ export function LandingPage() {
       <HowItWorks />
       <Outputs />
       <TechnicalExplanation />
+      <FieldNotes />
       <VersionSplit />
       <CtaBand />
     </>
@@ -265,12 +266,9 @@ function TechnicalExplanation() {
           </Reveal>
 
           <Reveal delay={140} className="lg:pt-16">
-            <img
-              src={SETUP_IMAGE}
-              alt="Battery bank and inverter installed in a residential utility room."
-              className="mb-8 aspect-[4/3] w-full rounded-md object-cover"
-              loading="lazy"
-            />
+            <div className="mb-8">
+              <SolarFlowDiagram />
+            </div>
             <p className="label-mono mb-3">Model constants</p>
             <dl className="flex flex-col rounded-md border border-line bg-surface">
               {ASSUMPTIONS.map(([label, value]) => (
@@ -286,6 +284,14 @@ function TechnicalExplanation() {
           </Reveal>
         </div>
       </div>
+    </section>
+  )
+}
+
+function FieldNotes() {
+  return (
+    <section className="border-b border-line bg-bg py-14 sm:py-20">
+      <EnergyTipsCarousel />
     </section>
   )
 }

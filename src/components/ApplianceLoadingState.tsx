@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ENERGY_TIPS } from '../lib/energyTips'
 
 type Props = {
   isError?: boolean
@@ -12,20 +13,9 @@ const STATUS_STAGES = [
   { at: 45, label: 'Taking a bit longer than usual…' },
 ]
 
-const TIPS = [
-  'A fridge sips about 1.5 kWh/day — the single biggest fixed load in most homes.',
-  'LED bulbs use roughly 75% less energy than incandescents and last 25× longer.',
-  'Inverter ACs can draw 2–3× their rated power at startup. Headroom matters.',
-  'A 400 W panel in a good sun-day returns around 2 kWh of usable energy.',
-  'Lead-acid banks are usually sized to 50% depth-of-discharge to protect lifespan.',
-  'Standby loads (TVs, chargers, routers) can total 50–100 W all day. Add them in.',
-  'Washing machines spike on the heater element — know whether yours uses hot water.',
-  'A ceiling fan at 75 W beats a 1,500 W AC for comfort when the outage is short.',
-]
-
 export function ApplianceLoadingState({ isError, onRetry }: Props) {
   const [elapsed, setElapsed] = useState(0)
-  const [tipIndex, setTipIndex] = useState(() => Math.floor(Math.random() * TIPS.length))
+  const [tipIndex, setTipIndex] = useState(() => Math.floor(Math.random() * ENERGY_TIPS.length))
 
   useEffect(() => {
     if (isError) return
@@ -35,7 +25,7 @@ export function ApplianceLoadingState({ isError, onRetry }: Props) {
 
   useEffect(() => {
     if (isError) return
-    const rotate = setInterval(() => setTipIndex((i) => (i + 1) % TIPS.length), 6000)
+    const rotate = setInterval(() => setTipIndex((i) => (i + 1) % ENERGY_TIPS.length), 6000)
     return () => clearInterval(rotate)
   }, [isError])
 
@@ -108,7 +98,7 @@ export function ApplianceLoadingState({ isError, onRetry }: Props) {
           className="mt-2 text-sm leading-relaxed text-fg animate-shimmer"
           style={{ animationDuration: '2s', animationIterationCount: 1 }}
         >
-          {TIPS[tipIndex]}
+          {ENERGY_TIPS[tipIndex].tip}
         </p>
       </div>
 

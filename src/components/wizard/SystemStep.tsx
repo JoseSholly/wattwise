@@ -38,8 +38,8 @@ export function SystemStep() {
       title="Configure your system"
       description={
         ctx.version === 'v1'
-          ? 'Pick a system voltage, battery size and panel size, and set how long you want the system to run during an outage. All appliances will share this backup time.'
-          : 'Pick any system voltage that is a multiple of 12, plus your battery and panel sizes. Each appliance will get its own runtime in the next step.'
+          ? 'Pick a system voltage, battery size and panel size, and set how long you want the system to run during an outage. All appliances will share this backup time. For example, choosing a 24V system with 200Ah batteries and 400W panels for a 6-hour backup will calculate exactly how many batteries and panels you need to keep your selected loads running.'
+          : 'Pick any system voltage that is a multiple of 12, plus your battery and panel sizes. Each appliance will get its own runtime in the next step. For example, entering a 24V system with 200Ah batteries and 400W panels lets you tailor distinct operating hours for your fridge, TV, or lights later.'
       }
       back={{ to: '/', label: 'Back to overview', labelShort: 'Back' }}
       primary={{ onClick: onContinue, label: 'Continue to loads', labelShort: 'Continue' }}
