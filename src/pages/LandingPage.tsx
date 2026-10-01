@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import { Reveal } from '../components/Reveal'
+import { useAppliances } from '../api/appliances'
 import { ASSUMPTIONS } from '../lib/model'
 
 // Real energy imagery via Unsplash direct image URLs.
@@ -56,6 +57,10 @@ const OUTPUTS = [
 ]
 
 export function LandingPage() {
+  // Wake the Render instance now so the appliance list is ready by the time
+  // the user reaches the loads step. Return value intentionally ignored.
+  useAppliances()
+
   return (
     <>
       <Hero />

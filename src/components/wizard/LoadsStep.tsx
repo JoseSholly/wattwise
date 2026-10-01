@@ -1,5 +1,7 @@
 import { useNavigate, useOutletContext } from 'react-router'
 import { useWatch, type Control } from 'react-hook-form'
+import { useAppliances } from '../../api/appliances'
+import { ApplianceLoadingState } from '../ApplianceLoadingState'
 import { ItemsTable } from '../ItemsTable'
 import { Panel } from '../Panel'
 import { WizardShell } from './WizardShell'
@@ -9,6 +11,7 @@ import type { V1Form } from '../../lib/schemas'
 export function LoadsStep() {
   const ctx = useOutletContext<WizardContext>()
   const navigate = useNavigate()
+  const appliances = useAppliances()
 
   // v1 shares one backup time across every appliance; we read it live for the totals bar.
   // v2's form has no backup_time so we widen the control before subscribing.
@@ -39,10 +42,17 @@ export function LoadsStep() {
       primary={{ onClick: onContinue, label: 'Review specification', labelShort: 'Review' }}
     >
       <Panel eyebrow="Loads" title="Appliances" bare={false}>
-        <ItemsTable
-          withBackupTime={ctx.version === 'v2'}
-          sharedHours={ctx.version === 'v1' ? sharedHours : undefined}
-        />
+        {appliances.data ? (
+          <ItemsTable
+            withBackupTime={ctx.version === 'v2'}
+            sharedHours={ctx.version === 'v1' ? sharedHours : undefined}
+          />
+        ) : (
+          <ApplianceLoadingState
+            isError={appliances.isError}
+            onRetry={() => appliances.refetch()}
+          />
+        )}
       </Panel>
     </WizardShell>
   )

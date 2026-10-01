@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { FormProvider, useForm } from 'react-hook-form'
 import { Outlet, useLocation, useNavigate } from 'react-router'
+import { useAppliances } from '../../api/appliances'
 import { calculateV1, calculateV2 } from '../../api/calculate'
 import type {
   V1CalculationIn,
@@ -103,6 +104,8 @@ function useCompletedSteps() {
 }
 
 export function V1Wizard() {
+  // Warm the API as soon as the wizard mounts so the loads step rarely waits.
+  useAppliances()
   const draft = useMemo(() => readDraft<V1Form>('v1'), [])
   const form = useForm<V1Form>({
     resolver: zodResolver(v1Schema),
@@ -169,6 +172,7 @@ export function V1Wizard() {
 }
 
 export function V2Wizard() {
+  useAppliances()
   const draft = useMemo(() => readDraft<V2Form>('v2'), [])
   const form = useForm<V2Form>({
     resolver: zodResolver(v2Schema),
