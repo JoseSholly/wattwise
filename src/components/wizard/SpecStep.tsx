@@ -105,15 +105,15 @@ export function SpecStep() {
     <WizardShell
       version={ctx.version}
       currentStep="spec"
-      title="Your specification"
-      description="Below is the equipment sizing that matches your inputs. Take this to a qualified installer to confirm and quote."
+      title="Your solar backup plan"
+      description="A friendly summary of what to buy, how it fits together, and what to watch for. Every number an installer needs is still here — just in plain English."
       back={back}
       primary={{ onClick: ctx.startOver, label: 'Start over', accent: true }}
     >
       <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <Panel
           eyebrow={ctx.version === 'v1' ? 'Standard sizing' : 'Custom sizing'}
-          title="Specification sheet"
+          title="Your plan"
           aside={<span className="font-mono text-[11px] text-subtle">{meta}</span>}
         >
           <SpecSheet
@@ -122,6 +122,8 @@ export function SpecStep() {
               system_voltage: data.system_voltage,
               battery_capacity: data.battery_capacity,
               solar_panel_watt: data.solar_panel_watt,
+              shared_backup_time: sharedBackupTime,
+              items,
             }}
           />
         </Panel>

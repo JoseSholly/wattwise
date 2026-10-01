@@ -125,32 +125,32 @@ function V2Fields({ form }: { form: UseFormReturn<V2Form> }) {
   } = form
   return (
     <div className="grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-3">
-      <Field
+      <Select
         id="system_voltage"
         label="System voltage"
-        hint="Multiple of 12"
-        unit="V"
-        type="number"
-        inputMode="numeric"
-        step="12"
-        min="12"
-        max="240"
+        hint="DC bus"
         error={errors.system_voltage?.message}
         {...register('system_voltage', { valueAsNumber: true })}
-      />
-      <Field
+      >
+        {V1_SYSTEM_VOLTAGES.map((v) => (
+          <option key={v} value={v}>
+            {v} V
+          </option>
+        ))}
+      </Select>
+      <Select
         id="battery_capacity"
         label="Battery size"
-        hint="1–5,000"
-        unit="Ah"
-        type="number"
-        inputMode="decimal"
-        step="any"
-        min="1"
-        max="5000"
+        hint="12 V unit"
         error={errors.battery_capacity?.message}
         {...register('battery_capacity', { valueAsNumber: true })}
-      />
+      >
+        {V1_BATTERY_CAPACITIES.map((v) => (
+          <option key={v} value={v}>
+            {v} Ah
+          </option>
+        ))}
+      </Select>
       <Field
         id="solar_panel_watt"
         label="Solar panel"
