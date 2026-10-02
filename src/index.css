@@ -116,3 +116,55 @@ body {
     @apply flex items-baseline justify-between gap-4 border-b border-line py-3 last:border-b-0;
   }
 }
+
+/* ── Solar flow diagram ────────────────────────────────────────────────
+   Current is drawn as short dashes travelling along each conductor in the
+   direction of flow. One dash period is 10 units, so offsetting by -10
+   loops seamlessly. */
+@keyframes sfd-flow {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+@keyframes sfd-lamp {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+@keyframes sfd-led {
+  0%,
+  60% {
+    opacity: 1;
+  }
+  61%,
+  100% {
+    opacity: 0.2;
+  }
+}
+
+.sfd-flow {
+  stroke-dasharray: 3 7;
+  animation: sfd-flow 0.8s linear infinite;
+}
+
+.sfd-lamp {
+  animation: sfd-lamp 2.4s ease-in-out infinite;
+}
+
+.sfd-led {
+  animation: sfd-led 1s steps(1, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sfd-flow,
+  .sfd-lamp,
+  .sfd-led {
+    animation: none;
+  }
+}
