@@ -160,7 +160,7 @@ function Column({ tips, direction, speed, initialOffset, className = '' }: Colum
 
 function TipCard({ entry }: { entry: EnergyTip }) {
   return (
-    <article className="flex flex-col gap-2.5 rounded-lg border border-line bg-surface p-5 sm:gap-3 sm:p-6">
+    <article className="flex flex-col gap-2.5 rounded-2xl border border-line bg-surface/70 p-5 transition-colors duration-300 hover:border-accent/60 sm:gap-3 sm:p-6">
       <p className="label-mono text-accent-ink">{entry.category}</p>
       <p className="text-[14px] leading-relaxed text-fg sm:text-[15px] sm:leading-relaxed">
         {entry.tip}

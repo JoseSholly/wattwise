@@ -1,3 +1,7 @@
+import { useReducedMotion } from 'motion/react'
+import type { CSSProperties } from 'react'
+import { useInView } from '../lib/useInView'
+
 /**
  * One-line schematic of a residential solar backup system.
  *
@@ -5,6 +9,10 @@
  * centered column; labels sit in a right-hand column connected by dashed
  * leader lines, callout-style. Amber is reserved for the energy itself —
  * traveling pulses on the circuit, charging cells, and lit pendant lamps.
+ *
+ * On first view the chain assembles top to bottom: each stage fades in and the
+ * wire to the next one draws itself, so a reader follows the energy's path
+ * from sun to home before the pulses start flowing.
  */
 export function SolarFlowDiagram() {
   const line = 'rgb(var(--line-strong))'
@@ -24,6 +32,29 @@ export function SolarFlowDiagram() {
   const PULSE_DUR = 5.4
   const PULSE_DELAYS = [0, PULSE_DUR / 3, (PULSE_DUR * 2) / 3]
 
+  const { ref, inView } = useInView<HTMLDivElement>({ threshold: 0.3 })
+  const reduce = useReducedMotion()
+  const shown = inView || !!reduce
+
+  // Sequenced assembly: stage i appears STEP seconds after stage i-1.
+  const STEP = 0.32
+  const ease = 'cubic-bezier(0.16, 1, 0.3, 1)'
+  const stage = (i: number): CSSProperties =>
+    reduce
+      ? {}
+      : {
+          opacity: shown ? 1 : 0,
+          transform: shown ? 'translateY(0)' : 'translateY(8px)',
+          transformBox: 'fill-box',
+          transition: `opacity 0.8s ${ease} ${i * STEP}s, transform 0.8s ${ease} ${i * STEP}s`,
+        }
+  // Wires draw downward once the stage above them has landed.
+  const wire = (len: number, i: number) => ({
+    strokeDasharray: len,
+    strokeDashoffset: shown ? 0 : len,
+    style: reduce ? undefined : { transition: `stroke-dashoffset 0.45s ease-out ${i * STEP + 0.2}s` },
+  })
+
   // Component midline Y-coordinates — used to place both the leaders and the labels.
   const rows = [
     { y: 83, right: 250, text: 'PV ARRAY' },
@@ -34,7 +65,16 @@ export function SolarFlowDiagram() {
   ]
 
   return (
-    <div className="relative w-full overflow-hidden rounded-md border border-line bg-surface">
+    <div
+      ref={ref}
+      className="relative isolate w-full overflow-hidden rounded-2xl border border-line bg-surface"
+    >
+      {/* Warm daylight pooling from the sun at the top of the card */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-24 left-[37.5%] -z-10 h-64 w-64 -translate-x-1/2 rounded-full opacity-60 blur-3xl"
+        style={{ background: 'radial-gradient(closest-side, rgb(var(--accent) / 0.45), transparent)' }}
+      />
       <svg
         viewBox="0 0 400 470"
         className="block h-auto w-full"
@@ -45,46 +85,64 @@ export function SolarFlowDiagram() {
           <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
             <feGaussianBlur stdDeviation="2.6" />
           </filter>
+          <filter id="glow-soft" x="-200%" y="-200%" width="500%" height="500%">
+            <feGaussianBlur stdDeviation="6" />
+          </filter>
           <path id="circuit" d="M 150 32 L 150 424" fill="none" />
         </defs>
 
         {/* ─────────────────────────── WIRES ─────────────────────────── */}
         <g stroke={line} strokeWidth="1.25" fill="none">
-          <line x1="150" y1="32" x2="150" y2="60" />
-          <line x1="150" y1="106" x2="150" y2="146" />
-          <line x1="150" y1="178" x2="150" y2="216" />
-          <line x1="150" y1="268" x2="150" y2="304" />
-          <line x1="150" y1="336" x2="150" y2="376" />
+          <line x1="150" y1="32" x2="150" y2="60" {...wire(28, 0)} />
+          <line x1="150" y1="106" x2="150" y2="146" {...wire(40, 1)} />
+          <line x1="150" y1="178" x2="150" y2="216" {...wire(38, 2)} />
+          <line x1="150" y1="268" x2="150" y2="304" {...wire(36, 3)} />
+          <line x1="150" y1="336" x2="150" y2="376" {...wire(40, 4)} />
         </g>
 
         {/* ─────────────────────────── SUN ─────────────────────────── */}
-        <g>
-          {Array.from({ length: 8 }).map((_, i) => {
-            const a = (i * Math.PI) / 4
-            return (
-              <line
-                key={i}
-                x1={150 + Math.cos(a) * 12}
-                y1={20 + Math.sin(a) * 12}
-                x2={150 + Math.cos(a) * 17}
-                y2={20 + Math.sin(a) * 17}
-                stroke={accent}
-                strokeWidth="1.25"
-                strokeLinecap="round"
+        <g style={stage(0)}>
+          <circle cx="150" cy="20" r="12" fill={accent} opacity="0.35" filter="url(#glow-soft)">
+            <animate attributeName="r" values="11;15;11" dur="4s" repeatCount="indefinite" />
+          </circle>
+          <g>
+            {Array.from({ length: 8 }).map((_, i) => {
+              const a = (i * Math.PI) / 4
+              return (
+                <line
+                  key={i}
+                  x1={150 + Math.cos(a) * 12}
+                  y1={20 + Math.sin(a) * 12}
+                  x2={150 + Math.cos(a) * 17}
+                  y2={20 + Math.sin(a) * 17}
+                  stroke={accent}
+                  strokeWidth="1.25"
+                  strokeLinecap="round"
+                />
+              )
+            })}
+            {!reduce && (
+              <animateTransform
+                attributeName="transform"
+                type="rotate"
+                from="0 150 20"
+                to="360 150 20"
+                dur="30s"
+                repeatCount="indefinite"
               />
-            )
-          })}
+            )}
+          </g>
           <circle cx="150" cy="20" r="7" fill={accent} />
         </g>
 
         {/* ─────────────────────────── PV ARRAY ─────────────────────────── */}
-        <g>
+        <g style={stage(1)}>
           <rect
             x="50"
             y="60"
             width="200"
             height="46"
-            rx="2"
+            rx="3"
             fill={fill}
             stroke={line}
             strokeWidth="1.25"
@@ -113,16 +171,28 @@ export function SolarFlowDiagram() {
               opacity="0.7"
             />
           ))}
+          {/* Sunlight glinting across the cells */}
+          {!reduce && (
+            <rect x="50" y="60" width="26" height="46" fill={accent} opacity="0">
+              <animate attributeName="x" values="40;250" dur="4.5s" repeatCount="indefinite" />
+              <animate
+                attributeName="opacity"
+                values="0;0.22;0"
+                dur="4.5s"
+                repeatCount="indefinite"
+              />
+            </rect>
+          )}
         </g>
 
         {/* ─────────────────────────── CHARGE CONTROLLER ─────────────────────────── */}
-        <g>
+        <g style={stage(2)}>
           <rect
             x="100"
             y="146"
             width="100"
             height="32"
-            rx="2"
+            rx="3"
             fill={fill}
             stroke={line}
             strokeWidth="1.25"
@@ -133,13 +203,13 @@ export function SolarFlowDiagram() {
         </g>
 
         {/* ─────────────────────────── BATTERY BANK (cells charge in sequence) ─────────────────────────── */}
-        <g>
+        <g style={stage(3)}>
           <rect
             x="70"
             y="216"
             width="160"
             height="52"
-            rx="2"
+            rx="3"
             fill="transparent"
             stroke={line}
             strokeWidth="1.25"
@@ -181,7 +251,7 @@ export function SolarFlowDiagram() {
                   />
                   <animate
                     attributeName="opacity"
-                    values="0.55;0.55;0;0"
+                    values="0.75;0.75;0;0"
                     keyTimes="0;0.6;0.85;1"
                     dur="3.2s"
                     begin={begin}
@@ -194,13 +264,13 @@ export function SolarFlowDiagram() {
         </g>
 
         {/* ─────────────────────────── INVERTER ─────────────────────────── */}
-        <g>
+        <g style={stage(4)}>
           <rect
             x="100"
             y="304"
             width="100"
             height="32"
-            rx="2"
+            rx="3"
             fill={fill}
             stroke={line}
             strokeWidth="1.25"
@@ -228,7 +298,16 @@ export function SolarFlowDiagram() {
             Distinct roof (triangle with overhanging eaves) sitting on a wall
             rectangle. The body path is open at the top so the roof's base line
             serves as the ceiling and no stroke is double-drawn. */}
-        <g>
+        <g style={stage(5)}>
+          {/* Warm interior light spilling from the lamps */}
+          <ellipse cx="150" cy="430" rx="34" ry="16" fill={accent} opacity="0.18" filter="url(#glow-soft)">
+            <animate
+              attributeName="opacity"
+              values="0.12;0.24;0.12"
+              dur="3.6s"
+              repeatCount="indefinite"
+            />
+          </ellipse>
           {/* Walls + floor only (open top) */}
           <path
             d="M 110 412 L 110 454 L 190 454 L 190 412"
@@ -245,14 +324,7 @@ export function SolarFlowDiagram() {
             strokeLinejoin="round"
           />
           {/* Gable detail: small round attic window centered in the roof */}
-          <circle
-            cx="150"
-            cy="400"
-            r="2.5"
-            fill={fill}
-            stroke={line}
-            strokeWidth="0.75"
-          />
+          <circle cx="150" cy="400" r="2.5" fill={fill} stroke={line} strokeWidth="0.75" />
           {/* Door */}
           <rect
             x="142"
@@ -269,18 +341,8 @@ export function SolarFlowDiagram() {
           {/* ── Pendant lamps: cord → socket (with threading) → oval glass bulb ── */}
           {[128, 172].map((x) => (
             <g key={x}>
-              {/* Cord from ceiling to socket */}
               <line x1={x} y1="412" x2={x} y2="417" stroke={line} strokeWidth="0.75" />
-              {/* Socket — dark metal screw base */}
-              <rect
-                x={x - 2.2}
-                y="417"
-                width="4.4"
-                height="3"
-                fill={line}
-                rx="0.4"
-              />
-              {/* Threading detail — thin horizontal lines on the socket */}
+              <rect x={x - 2.2} y="417" width="4.4" height="3" fill={line} rx="0.4" />
               <line
                 x1={x - 2.2}
                 y1="418.5"
@@ -289,19 +351,16 @@ export function SolarFlowDiagram() {
                 stroke={fill}
                 strokeWidth="0.4"
               />
-              {/* Soft bloom around the lit bulb */}
               <ellipse
                 cx={x}
                 cy="425"
                 rx="5.8"
                 ry="6.4"
                 fill={accent}
-                opacity="0.35"
+                opacity="0.45"
                 filter="url(#glow)"
               />
-              {/* Bulb glass — oval, taller than wide (classic incandescent silhouette) */}
               <ellipse cx={x} cy="425" rx="3.6" ry="4.2" fill={accent} />
-              {/* Highlight — reads as glass */}
               <ellipse
                 cx={x - 1.1}
                 cy="423.5"
@@ -316,75 +375,91 @@ export function SolarFlowDiagram() {
 
         {/* ─────────────────────────── WIRE ANNOTATIONS ─────────────────────────── */}
         <g {...mono} fontSize="7">
-          <text x="158" y="128" dominantBaseline="middle" fill={label}>
+          <text x="158" y="128" dominantBaseline="middle" fill={label} style={stage(2)}>
             DC
           </text>
-          <text x="158" y="358" dominantBaseline="middle" fill={accentInk}>
+          <text x="158" y="358" dominantBaseline="middle" fill={accentInk} style={stage(5)}>
             AC
           </text>
         </g>
 
         {/* ─────────────────────────── SIDE LABELS (callout-style) ─────────────────────────── */}
-        {/* Dashed leader lines from each component's right edge to the label column */}
-        <g stroke={label} strokeWidth="0.75" strokeDasharray="2 2" opacity="0.6" fill="none">
-          {rows.map((r) => (
-            <line key={r.y} x1={r.right} y1={r.y} x2="258" y2={r.y} />
-          ))}
-        </g>
-        {/* Small tick on the component side of each leader */}
-        <g fill={label} opacity="0.7">
-          {rows.map((r) => (
-            <circle key={r.y} cx={r.right} cy={r.y} r="1.1" />
-          ))}
-        </g>
-        {/* Label text, aligned left in the right column */}
-        <g {...mono} fill={label} fontSize="8" textAnchor="start" dominantBaseline="middle">
-          {rows.map((r) => (
-            <text key={r.y} x="263" y={r.y}>
+        {rows.map((r, i) => (
+          <g key={r.y} style={stage(i + 1)}>
+            <line
+              x1={r.right}
+              y1={r.y}
+              x2="258"
+              y2={r.y}
+              stroke={label}
+              strokeWidth="0.75"
+              strokeDasharray="2 2"
+              opacity="0.6"
+            />
+            <circle cx={r.right} cy={r.y} r="1.1" fill={label} opacity="0.7" />
+            <text
+              x="263"
+              y={r.y}
+              {...mono}
+              fill={label}
+              fontSize="8"
+              textAnchor="start"
+              dominantBaseline="middle"
+            >
               {r.text}
             </text>
-          ))}
-        </g>
-
-        {/* ─────────────────────────── ENERGY PULSES ─────────────────────────── */}
-        {PULSE_DELAYS.map((delay, i) => (
-          <g key={i}>
-            <circle r="5" fill={accent} opacity="0" filter="url(#glow)">
-              <animate
-                attributeName="opacity"
-                values="0;0.35;0.35;0"
-                keyTimes="0;0.08;0.92;1"
-                dur={`${PULSE_DUR}s`}
-                begin={`${delay}s`}
-                repeatCount="indefinite"
-              />
-              <animateMotion
-                dur={`${PULSE_DUR}s`}
-                begin={`${delay}s`}
-                repeatCount="indefinite"
-              >
-                <mpath href="#circuit" />
-              </animateMotion>
-            </circle>
-            <circle r="2" fill={accent} opacity="0">
-              <animate
-                attributeName="opacity"
-                values="0;1;1;0"
-                keyTimes="0;0.08;0.92;1"
-                dur={`${PULSE_DUR}s`}
-                begin={`${delay}s`}
-                repeatCount="indefinite"
-              />
-              <animateMotion
-                dur={`${PULSE_DUR}s`}
-                begin={`${delay}s`}
-                repeatCount="indefinite"
-              >
-                <mpath href="#circuit" />
-              </animateMotion>
-            </circle>
           </g>
         ))}
+
+        {/* ─────────────────────────── ENERGY PULSES ───────────────────────────
+            Faded in once the chain has assembled, so current appears to start
+            flowing only after every stage is in place. */}
+        <g
+          style={
+            reduce
+              ? undefined
+              : { opacity: shown ? 1 : 0, transition: `opacity 0.6s ease-out ${6 * STEP}s` }
+          }
+        >
+          {PULSE_DELAYS.map((delay, i) => (
+            <g key={i}>
+              <circle r="7" fill={accent} opacity="0" filter="url(#glow)">
+                <animate
+                  attributeName="opacity"
+                  values="0;0.5;0.5;0"
+                  keyTimes="0;0.08;0.92;1"
+                  dur={`${PULSE_DUR}s`}
+                  begin={`${delay}s`}
+                  repeatCount="indefinite"
+                />
+                <animateMotion
+                  dur={`${PULSE_DUR}s`}
+                  begin={`${delay}s`}
+                  repeatCount="indefinite"
+                >
+                  <mpath href="#circuit" />
+                </animateMotion>
+              </circle>
+              <circle r="2.2" fill={accent} opacity="0">
+                <animate
+                  attributeName="opacity"
+                  values="0;1;1;0"
+                  keyTimes="0;0.08;0.92;1"
+                  dur={`${PULSE_DUR}s`}
+                  begin={`${delay}s`}
+                  repeatCount="indefinite"
+                />
+                <animateMotion
+                  dur={`${PULSE_DUR}s`}
+                  begin={`${delay}s`}
+                  repeatCount="indefinite"
+                >
+                  <mpath href="#circuit" />
+                </animateMotion>
+              </circle>
+            </g>
+          ))}
+        </g>
       </svg>
     </div>
   )

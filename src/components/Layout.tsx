@@ -22,10 +22,8 @@ export function Layout() {
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden">
       <header
-        className={`sticky top-0 z-30 border-b ${
-          isLanding
-            ? 'border-white/10 bg-transparent backdrop-blur-0 supports-[backdrop-filter]:bg-black/10 supports-[backdrop-filter]:backdrop-blur-md'
-            : 'border-line bg-bg/80 backdrop-blur-md'
+        className={`sticky top-0 z-30 border-b backdrop-blur-md ${
+          isLanding ? 'border-line/60 bg-bg/55' : 'border-line bg-bg/80'
         }`}
       >
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4 sm:px-6">
@@ -34,7 +32,7 @@ export function Layout() {
             className="flex items-center gap-2 outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-ink"
             aria-label="WattWise home"
           >
-            <Wordmark onDark={isLanding} />
+            <Wordmark />
           </Link>
 
           <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
@@ -43,13 +41,11 @@ export function Layout() {
                 key={item.to}
                 to={item.to}
                 end={item.end}
-                className={({ isActive }) => {
-                  const base = 'rounded-md px-3 py-1.5 text-sm transition-colors'
-                  if (isLanding) {
-                    return `${base} ${isActive ? 'text-white' : 'text-white/70 hover:text-white'}`
-                  }
-                  return `${base} ${isActive ? 'text-fg' : 'text-muted hover:text-fg'}`
-                }}
+                className={({ isActive }) =>
+                  `rounded-md px-3 py-1.5 text-sm transition-colors ${
+                    isActive ? 'text-fg' : 'text-muted hover:text-fg'
+                  }`
+                }
               >
                 {item.label}
               </NavLink>
@@ -61,9 +57,7 @@ export function Layout() {
               href={API_DOCS_URL}
               target="_blank"
               rel="noreferrer"
-              className={`hidden text-sm transition-colors sm:inline ${
-                isLanding ? 'text-white/70 hover:text-white' : 'text-muted hover:text-fg'
-              }`}
+              className="hidden text-sm text-muted transition-colors hover:text-fg sm:inline"
             >
               API docs
             </a>

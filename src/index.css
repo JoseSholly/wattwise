@@ -115,4 +115,120 @@ body {
   .row-hairline {
     @apply flex items-baseline justify-between gap-4 border-b border-line py-3 last:border-b-0;
   }
+
+  /* Landing page: interactive elements are full pills, cards are rounded-2xl. */
+  .btn-pill {
+    @apply inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-full px-6
+      text-[15px] font-medium transition-[background-color,color,box-shadow,border-color] duration-300
+      focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+      focus-visible:outline-accent-ink active:scale-[0.98];
+  }
+
+  .btn-pill-accent {
+    @apply btn-pill bg-accent text-accent-fg;
+    box-shadow: 0 0 0 0 rgb(var(--accent) / 0), 0 8px 30px -10px rgb(var(--accent) / 0.7);
+  }
+  .btn-pill-accent:hover {
+    box-shadow: 0 0 0 6px rgb(var(--accent) / 0.16), 0 12px 44px -6px rgb(var(--accent) / 0.75);
+  }
+
+  .btn-pill-ghost {
+    @apply btn-pill border border-line-strong bg-bg/40 text-fg backdrop-blur-sm hover:border-fg/40;
+  }
+}
+
+/* ───────────── Landing: horizon glow (x.ai-style eclipse, in amber) ───────────── */
+
+.horizon-planet {
+  background: rgb(var(--bg));
+  box-shadow:
+    0 0 0 1px rgb(var(--accent) / 0.75),
+    0 0 16px 2px rgb(var(--accent) / 0.6),
+    0 0 70px 10px rgb(var(--accent) / 0.35),
+    0 0 220px 40px rgb(var(--accent) / 0.2),
+    inset 0 30px 70px -24px rgb(var(--accent) / 0.35);
+}
+
+.horizon-corona {
+  /* Centred on the rim and fully faded inside its own box, so no edge ever shows;
+     the lower half is hidden behind the planet. */
+  background: radial-gradient(
+    closest-side,
+    rgb(var(--accent) / 0.34),
+    rgb(var(--accent) / 0.1) 50%,
+    transparent
+  );
+  animation: corona-breathe 7s ease-in-out infinite;
+  transform-origin: 50% 50%;
+}
+
+.horizon-flare {
+  background: radial-gradient(closest-side, rgb(255 246 220 / 0.95), rgb(var(--accent) / 0.55) 45%, transparent);
+  filter: blur(4px);
+  animation: flare-drift 16s ease-in-out infinite alternate;
+}
+
+@keyframes corona-breathe {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes flare-drift {
+  /* Kept near the crest so the flare stays on the curved rim. */
+  from { transform: translateX(-14vw); }
+  to { transform: translateX(14vw); }
+}
+
+.spark {
+  position: absolute;
+  bottom: 0;
+  border-radius: 9999px;
+  background: rgb(var(--accent));
+  box-shadow: 0 0 8px 2px rgb(var(--accent) / 0.6);
+  opacity: 0;
+  animation-name: spark-rise;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes spark-rise {
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
+  12% { opacity: 0.9; }
+  100% { transform: translate3d(12px, -46vh, 0); opacity: 0; }
+}
+
+/* Cursor-lit border: paint only the 1px ring of the gradient layer. */
+.spotlight-edge {
+  padding: 1px;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Film grain over the dark landing page; fixed so it never repaints on scroll. */
+.grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+}
+
+/* Giant brand type in the closing section: a soft fade from ink to nothing. */
+.wordmark-ghost {
+  background: linear-gradient(180deg, rgb(var(--fg) / 0.12), rgb(var(--fg) / 0));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .horizon-corona,
+  .horizon-flare {
+    animation: none;
+  }
+  .spark {
+    display: none;
+  }
 }

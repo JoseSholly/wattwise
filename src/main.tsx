@@ -1,3 +1,4 @@
+import '@fontsource-variable/geist'
 import '@fontsource-variable/inter'
 import '@fontsource-variable/jetbrains-mono'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
