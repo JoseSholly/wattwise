@@ -20,13 +20,28 @@ export type SizingOutput = {
   total_current: number
   /** A, with 1.25 headroom */
   controller_current: number
+  /** 12, 24 or 48, from inverter size. Advice only; the sizing uses `system_voltage`. */
+  recommended_system_voltage?: number
+  /** Empty when there is nothing to say. Optional so an older API still works. */
+  warnings?: SizingWarning[]
+}
+
+export type SizingWarningCode = 'LOW_VOLTAGE' | 'MANY_PARALLEL_STRINGS'
+
+export type SizingWarning = {
+  /** Stable; branch on this, not on `message`. Unknown codes may appear later. */
+  code: SizingWarningCode | (string & {})
+  /** Display-ready English text. */
+  message: string
+  /** Voltage to suggest, or null (MANY_PARALLEL_STRINGS at 48 V+: use larger batteries). */
+  recommended_system_voltage: number | null
 }
 
 // v1: one backup time for every appliance, fixed component sizes.
 
-export type V1BatteryCapacity = 150 | 200 | 220 | 250
+export type V1BatteryCapacity = 65 | 75 | 100 | 120 | 150 | 200 | 220 | 250
 export type V1SystemVoltage = 12 | 24 | 48
-export type V1SolarPanelWatt = 300 | 350 | 400 | 450
+export type V1SolarPanelWatt = 100 | 150 | 200 | 250 | 300 | 350 | 400 | 450 | 500 | 550 | 600 | 650
 
 export type V1ItemIn = {
   id: number

@@ -31,7 +31,14 @@ const BATTERY_UNIT_VOLTAGE = 12
  * The exact spec numbers still appear in bold next to each component so an
  * installer can read them off directly.
  */
-export function SpecSheet({ spec }: { spec: SpecInput }) {
+export function SpecSheet({
+  spec,
+  hasVoltageWarning = false,
+}: {
+  spec: SpecInput
+  /** The page already shows a sizing notice, so skip the generic 48 V tip. */
+  hasVoltageWarning?: boolean
+}) {
   const { output, system_voltage, battery_capacity, solar_panel_watt, shared_backup_time, items } = spec
 
   const perString = Math.ceil(system_voltage / BATTERY_UNIT_VOLTAGE)
@@ -42,7 +49,8 @@ export function SpecSheet({ spec }: { spec: SpecInput }) {
     0,
   )
   const totalDailyKwh = totalDailyWh / 1000
-  const applianceCount = items.reduce((sum, it) => sum + it.quantity, 0)
+  // Distinct appliances the user added, not the sum of quantities (10 bulbs = 1 appliance).
+  const applianceCount = items.length
 
   const batteryBankWh = output.numbers_of_batteries * BATTERY_UNIT_VOLTAGE * battery_capacity
   const usableKwh = (batteryBankWh * 0.5) / 1000
@@ -72,6 +80,7 @@ export function SpecSheet({ spec }: { spec: SpecInput }) {
         usableKwh={usableKwh}
         batteryBankKwh={batteryBankWh / 1000}
         system_voltage={system_voltage}
+        hasVoltageWarning={hasVoltageWarning}
       />
       <ClosingLine
         applianceCount={applianceCount}
@@ -105,7 +114,7 @@ function PoweringSummary({
           : 'Your plan is designed to run each appliance for its own daily runtime — detailed in the breakdown on the right — from the sun and the batteries.'}
       </p>
       <dl className="mt-6 grid grid-cols-3 gap-4 border-t border-line pt-5">
-        <Stat label="Appliances" value={num(applianceCount)} unit={applianceCount === 1 ? 'item' : 'items'} />
+        <Stat label="Appliances" value={num(applianceCount)} unit="" />
         <Stat label="Running load" value={num(totalLoadW)} unit="W" />
         <Stat label="Daily energy" value={num(Math.round(totalDailyKwh * 100) / 100)} unit="kWh" />
       </dl>
@@ -388,11 +397,13 @@ function PracticalTips({
   usableKwh,
   batteryBankKwh,
   system_voltage,
+  hasVoltageWarning,
 }: {
   total_battery_capacity: number
   usableKwh: number
   batteryBankKwh: number
   system_voltage: number
+  hasVoltageWarning: boolean
 }) {
   return (
     <Section eyebrow="04" title="Worth knowing">
@@ -411,7 +422,7 @@ function PracticalTips({
         <Tip>
           <strong className="font-semibold text-fg">Lithium cuts the pack roughly in half</strong> and lasts 2–3× longer. Higher sticker price, often lower lifetime cost.
         </Tip>
-        {system_voltage < 48 && (
+        {system_voltage < 48 && !hasVoltageWarning && (
           <Tip>
             <strong className="font-semibold text-fg">48 V scales better than {num(system_voltage)} V</strong> — thinner cables, less wiring loss. Raise it with your installer if you'll add more loads later.
           </Tip>

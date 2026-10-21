@@ -6,9 +6,9 @@ import { z } from 'zod'
  * Field names match the API exactly.
  */
 
-export const V1_BATTERY_CAPACITIES = [150, 200, 220, 250] as const
+export const V1_BATTERY_CAPACITIES = [65, 75, 100, 120, 150, 200, 220, 250] as const
 export const V1_SYSTEM_VOLTAGES = [12, 24, 48] as const
-export const V1_SOLAR_PANEL_WATTS = [300, 350, 400, 450] as const
+export const V1_SOLAR_PANEL_WATTS = [100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650] as const
 
 const applianceId = z.number({ error: 'Choose an appliance' }).int().positive()
 

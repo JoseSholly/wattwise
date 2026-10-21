@@ -16,6 +16,9 @@ import {
   type V2Form,
 } from '../../lib/schemas'
 import type { UseFormReturn } from 'react-hook-form'
+import type { ReactNode } from 'react'
+import type { SizingOutput } from '../../api/types'
+import { suggestedVoltage, warningsOf } from '../../lib/warnings'
 
 const SYSTEM: WizardStepSlug = 'system'
 
@@ -46,18 +49,32 @@ export function SystemStep() {
     >
       <Panel eyebrow="System inputs" title="Backup power system">
         {ctx.version === 'v1' ? (
-          <V1Fields form={ctx.form} />
+          <V1Fields form={ctx.form} lastSuggested={lastSuggested(ctx.mutation.data)} />
         ) : (
-          <V2Fields form={ctx.form} />
+          <V2Fields form={ctx.form} lastSuggested={lastSuggested(ctx.mutation.data)} />
         )}
       </Panel>
     </WizardShell>
   )
 }
 
-function V1Fields({ form }: { form: UseFormReturn<V1Form> }) {
+/** The voltage the previous result suggested, if any. Shown as a hint; never auto-selected. */
+function lastSuggested(data: (SizingOutput & { system_voltage: number }) | undefined) {
+  return data ? suggestedVoltage(warningsOf(data), data.system_voltage) : null
+}
+
+function voltageHint(lastSuggested: number | null, voltage: number): ReactNode {
+  return lastSuggested !== null && lastSuggested > voltage ? (
+    <span className="text-accent-ink">{lastSuggested} V advised</span>
+  ) : (
+    'DC bus'
+  )
+}
+
+function V1Fields({ form, lastSuggested }: { form: UseFormReturn<V1Form>; lastSuggested: number | null }) {
   const {
     register,
+    watch,
     formState: { errors },
   } = form
   return (
@@ -78,7 +95,7 @@ function V1Fields({ form }: { form: UseFormReturn<V1Form> }) {
       <Select
         id="system_voltage"
         label="System voltage"
-        hint="DC bus"
+        hint={voltageHint(lastSuggested, watch('system_voltage'))}
         error={errors.system_voltage?.message}
         {...register('system_voltage', { valueAsNumber: true })}
       >
@@ -118,9 +135,10 @@ function V1Fields({ form }: { form: UseFormReturn<V1Form> }) {
   )
 }
 
-function V2Fields({ form }: { form: UseFormReturn<V2Form> }) {
+function V2Fields({ form, lastSuggested }: { form: UseFormReturn<V2Form>; lastSuggested: number | null }) {
   const {
     register,
+    watch,
     formState: { errors },
   } = form
   return (
@@ -128,7 +146,7 @@ function V2Fields({ form }: { form: UseFormReturn<V2Form> }) {
       <Select
         id="system_voltage"
         label="System voltage"
-        hint="DC bus"
+        hint={voltageHint(lastSuggested, watch('system_voltage'))}
         error={errors.system_voltage?.message}
         {...register('system_voltage', { valueAsNumber: true })}
       >

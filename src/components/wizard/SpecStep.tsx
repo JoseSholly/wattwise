@@ -4,10 +4,13 @@ import { EnergyBreakdown } from '../EnergyBreakdown'
 import { Panel } from '../Panel'
 import { SpecSheet } from '../SpecSheet'
 import { ErrorState, LoadingState } from '../states'
+import { VoltageNotice } from './VoltageNotice'
 import { WizardShell } from './WizardShell'
 import type { WizardContext } from './CalculatorWizard'
 import { num } from '../../lib/format'
 import { ASSUMPTIONS } from '../../lib/model'
+import { suggestedVoltage, warningsOf } from '../../lib/warnings'
+import type { V1Form } from '../../lib/schemas'
 import type {
   V1CalculationOut,
   V2CalculationOut,
@@ -101,6 +104,21 @@ export function SpecStep() {
       ? `${num(data.system_voltage)} V system · ${num(sharedBackupTime)} h backup`
       : `${num(data.system_voltage)} V system · per-appliance backup`
 
+  const warnings = warningsOf(data)
+  const suggested = suggestedVoltage(warnings, data.system_voltage)
+  const showVoltageNotice = warnings.length > 0
+
+  const switchVoltage = () => {
+    if (suggested === null) return
+    if (ctx.version === 'v1') {
+      // v1 only accepts 12/24/48, and the API only ever suggests those.
+      ctx.form.setValue('system_voltage', suggested as V1Form['system_voltage'], { shouldDirty: true })
+    } else {
+      ctx.form.setValue('system_voltage', suggested, { shouldDirty: true })
+    }
+    ctx.runCalculation()
+  }
+
   return (
     <WizardShell
       version={ctx.version}
@@ -110,6 +128,18 @@ export function SpecStep() {
       back={back}
       primary={{ onClick: ctx.startOver, label: 'Start over', accent: true }}
     >
+      {showVoltageNotice && (
+        <VoltageNotice
+          className="mb-8"
+          warnings={warnings}
+          current={data.system_voltage}
+          suggested={suggested}
+          onSwitch={switchVoltage}
+          onEditBatteries={() => navigate(`/${ctx.version}/system`)}
+          pending={ctx.mutation.isPending}
+        />
+      )}
+
       <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <Panel
           eyebrow={ctx.version === 'v1' ? 'Standard sizing' : 'Custom sizing'}
@@ -125,6 +155,7 @@ export function SpecStep() {
               shared_backup_time: sharedBackupTime,
               items,
             }}
+            hasVoltageWarning={showVoltageNotice}
           />
         </Panel>
 
