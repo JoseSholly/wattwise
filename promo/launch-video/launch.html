@@ -1,0 +1,567 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>WattWise Launch</title>
+<style>
+@font-face { font-family: 'Geist'; src: url(fonts/geist-latin-wght-normal.woff2) format('woff2'); font-weight: 100 900; }
+@font-face { font-family: 'Inter'; src: url(fonts/inter-latin-wght-normal.woff2) format('woff2'); font-weight: 100 900; }
+@font-face { font-family: 'JBM'; src: url(fonts/jetbrains-mono-latin-wght-normal.woff2) format('woff2'); font-weight: 100 900; }
+:root {
+  --bg: #0c0c0e; --surface: #161619; --surface2: #202024; --line: #2d2d32; --line-strong: #424248;
+  --fg: #f4f4f5; --muted: #a1a1aa; --subtle: #71717a; --accent: #fbbf24; --accent-ink: #fcd34d;
+  --a: 251 191 36;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+body { font-family: 'Inter', sans-serif; color: var(--fg); -webkit-font-smoothing: antialiased; font-feature-settings: 'cv11','ss01'; }
+#stage { position: absolute; inset: 0; overflow: hidden; background: var(--bg); }
+.scene { position: absolute; inset: 0; opacity: 0; will-change: opacity, filter, transform; }
+.display { font-family: 'Geist', 'Inter', sans-serif; font-weight: 600; letter-spacing: -0.04em; }
+.mono { font-family: 'JBM', monospace; }
+.label { font-family: 'JBM', monospace; font-size: 18px; font-weight: 500; letter-spacing: 0.22em; text-transform: uppercase; color: var(--subtle); }
+.amber { color: var(--accent); }
+.w { display: inline-block; white-space: pre; will-change: transform, opacity, filter; }
+
+/* Grain + vignette */
+#grain { position: absolute; inset: -200px; pointer-events: none; opacity: 0.07; z-index: 50;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px; }
+#vignette { position: absolute; inset: 0; pointer-events: none; z-index: 49;
+  background: radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,0.55)); }
+#flash { position: absolute; inset: 0; z-index: 60; pointer-events: none; opacity: 0;
+  background: radial-gradient(60% 60% at 50% 60%, rgb(var(--a) / 0.55), rgb(var(--a) / 0.12) 60%, transparent); mix-blend-mode: screen; }
+#fade { position: absolute; inset: 0; z-index: 70; background: #000; opacity: 1; pointer-events: none; }
+
+/* Horizon (planet + rim glow, from the landing page) */
+.planet { position: absolute; left: 50%; width: 3400px; height: 3400px; margin-left: -1700px; border-radius: 50%;
+  background: var(--bg);
+  box-shadow: 0 0 0 2px rgb(var(--a) / 0.85), 0 0 24px 4px rgb(var(--a) / 0.7), 0 0 100px 18px rgb(var(--a) / 0.4),
+    0 0 320px 70px rgb(var(--a) / 0.22), inset 0 40px 90px -30px rgb(var(--a) / 0.4); }
+.corona { position: absolute; left: 50%; width: 2600px; height: 1100px; margin-left: -1300px; border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(var(--a) / 0.36), rgb(var(--a) / 0.1) 50%, transparent); }
+.flare { position: absolute; width: 520px; height: 46px; margin-left: -260px; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255,246,220,0.95), rgb(var(--a) / 0.55) 45%, transparent); filter: blur(5px); }
+.spark { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: var(--accent);
+  box-shadow: 0 0 10px 3px rgb(var(--a) / 0.6); }
+
+/* Browser frame */
+.browser { position: absolute; border-radius: 16px; overflow: hidden; background: var(--bg);
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 60px 140px -30px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.03), 0 0 120px -20px rgb(var(--a) / 0.25); }
+.browser .bar { height: 44px; background: #141417; border-bottom: 1px solid var(--line); display: flex; align-items: center; padding: 0 18px; gap: 9px; }
+.browser .dot { width: 12px; height: 12px; border-radius: 50%; background: #3a3a40; }
+.browser .url { margin-left: 22px; flex: 0 0 auto; height: 28px; padding: 0 16px; border-radius: 8px; background: #1f1f23;
+  color: var(--muted); font: 500 14px 'JBM', monospace; display: flex; align-items: center; gap: 8px; }
+.browser .url b { color: var(--fg); font-weight: 500; }
+.browser .vp { position: relative; overflow: hidden; }
+.browser .vp img { position: absolute; left: 0; top: 0; width: 100%; display: block; }
+
+.callout { position: absolute; border: 2px solid var(--accent); border-radius: 12px;
+  box-shadow: 0 0 0 6px rgb(var(--a) / 0.15), 0 0 40px 4px rgb(var(--a) / 0.35); opacity: 0; }
+
+.chip { position: absolute; padding: 18px 22px; border-radius: 18px; border: 1px solid var(--line); background: rgba(22,22,25,0.85); }
+.chip .v { font: 600 30px 'JBM', monospace; color: var(--fg); }
+.chip .k { margin-top: 6px; font-size: 17px; color: var(--muted); }
+
+.pill { display: inline-flex; align-items: center; gap: 12px; height: 72px; padding: 0 40px; border-radius: 999px;
+  background: var(--accent); color: #1c1917; font: 600 26px 'Inter', sans-serif;
+  box-shadow: 0 0 0 10px rgb(var(--a) / 0.14), 0 18px 60px -12px rgb(var(--a) / 0.8); }
+
+.ghost { background: linear-gradient(180deg, rgba(244,244,245,0.13), rgba(244,244,245,0)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- S1: cold open -->
+  <section class="scene" id="s1">
+    <div id="s1sparks"></div>
+    <div style="position:absolute; left:0; right:0; top:390px; text-align:center;">
+      <div class="display" id="s1a" style="font-size:96px; line-height:1.05; color:var(--muted)"></div>
+      <div class="display" id="s1b" style="font-size:96px; line-height:1.15; margin-top:6px"></div>
+    </div>
+  </section>
+
+  <!-- S2: logo reveal over the horizon -->
+  <section class="scene" id="s2">
+    <div class="corona" id="s2corona"></div>
+    <div class="planet" id="s2planet"></div>
+    <div class="flare" id="s2flare"></div>
+    <div id="s2sparks"></div>
+    <div style="position:absolute; left:0; right:0; top:300px; display:flex; flex-direction:column; align-items:center;">
+      <div id="s2logo" style="display:flex; align-items:center; gap:30px;">
+        <svg id="s2bolt" width="128" height="128" viewBox="0 0 32 32" style="filter: drop-shadow(0 0 40px rgb(251 191 36 / 0.55))"><rect width="32" height="32" rx="7" fill="#fbbf24"/><path d="M18 5 8.5 18H15l-1 9 9.5-13H17l1-9z" fill="#1c1917"/></svg>
+        <div class="display" id="s2word" style="font-size:150px; letter-spacing:-0.05em; line-height:1">Watt<span class="amber">Wise</span></div>
+      </div>
+      <div class="label" id="s2label" style="margin-top:46px">Backup power sizing</div>
+      <div class="display" id="s2tag" style="margin-top:22px; font-size:56px; letter-spacing:-0.03em; color:var(--fg)"></div>
+    </div>
+  </section>
+
+  <!-- S3: the landing page in a browser -->
+  <section class="scene" id="s3">
+    <div class="corona" style="top:620px; opacity:0.55"></div>
+    <div id="s3cam" style="position:absolute; inset:0; perspective:2200px;">
+      <div class="browser" id="s3b" style="left:240px; top:110px; width:1440px;">
+        <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url"><b>wattwise-rho.vercel.app</b></span></div>
+        <div class="vp" style="height:900px"><img src="shots/hero.png"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- S4: three steps -->
+  <section class="scene" id="s4">
+    <div style="position:absolute; left:0; right:0; top:300px; text-align:center;">
+      <div class="label" id="s4label">How it works</div>
+      <div class="display" id="s4a" style="margin-top:28px; font-size:120px; line-height:1"></div>
+      <div class="display" id="s4b" style="margin-top:10px; font-size:120px; line-height:1.05; color:var(--muted)"></div>
+    </div>
+    <div style="position:absolute; left:560px; width:800px; top:740px; height:2px; background:var(--line)">
+      <div id="s4rail" style="height:100%; width:100%; transform-origin:left; background:var(--accent); box-shadow:0 0 14px 1px rgb(251 191 36 / 0.8)"></div>
+    </div>
+    <div id="s4nodes"></div>
+  </section>
+
+  <!-- S5-S7: the three steps -->
+  <section class="scene" id="s5">
+    <div style="position:absolute; left:110px; top:0; bottom:0; width:560px;">
+      <div id="stepText"></div>
+    </div>
+    <div style="position:absolute; inset:0; perspective:2400px;">
+      <div class="browser" id="s5b" style="left:700px; top:150px; width:1130px;">
+        <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url"><b>wattwise-rho.vercel.app</b><span id="s5path">/v2/system</span></span></div>
+        <div class="vp" id="s5vp" style="height:706px">
+          <img id="img-system" src="shots/system.png">
+          <img id="img-loads" src="shots/loads_full.png">
+          <img id="img-spec" src="shots/spec_full.png">
+          <div class="callout" id="co-loads"></div>
+          <div class="callout" id="co-spec"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- S8: four outputs readout -->
+  <section class="scene" id="s8">
+    <div style="position:absolute; left:50%; top:50%; width:1100px; height:1100px; margin:-550px 0 0 -100px; border-radius:50%; background:radial-gradient(closest-side, rgb(251 191 36 / 0.18), transparent)"></div>
+    <div class="label" style="position:absolute; left:140px; top:150px">What you get</div>
+    <div id="s8list" style="position:absolute; left:140px; top:230px; width:760px"></div>
+    <div style="position:absolute; left:1000px; top:250px; width:820px; height:600px;">
+      <div id="s8icon" style="position:absolute; right:0; top:-40px; width:340px; height:340px; opacity:0.14; color:var(--accent)"></div>
+      <div id="s8read" style="position:absolute; left:0; top:150px;"></div>
+    </div>
+    <div class="mono" style="position:absolute; left:140px; bottom:110px; font-size:18px; color:var(--subtle); letter-spacing:0.08em">EXAMPLE · FAMILY HOME · 5 APPLIANCES · 690 W · 4.78 kWh/day · 24 V</div>
+  </section>
+
+  <!-- S9: transparent model -->
+  <section class="scene" id="s9">
+    <div style="position:absolute; left:140px; top:190px; width:900px">
+      <div class="label">How the calculation works</div>
+      <div class="display" id="s9h" style="margin-top:26px; font-size:84px; line-height:1.03"></div>
+      <div id="s9chips" style="position:relative; margin-top:60px; height:330px"></div>
+    </div>
+    <div id="s9panel" style="position:absolute; left:1180px; top:120px; width:600px; height:704px; border-radius:24px; overflow:hidden; box-shadow:0 0 140px -30px rgb(251 191 36 / 0.35)">
+      <img src="shots/flow.png" style="width:600px; display:block">
+      <div id="s9pulse" style="position:absolute; left:220px; width:12px; height:12px; margin-left:0; border-radius:50%; background:#fbbf24; box-shadow:0 0 18px 6px rgb(251 191 36 / 0.7)"></div>
+    </div>
+  </section>
+
+  <!-- S10: two modes -->
+  <section class="scene" id="s10">
+    <div style="position:absolute; left:0; right:0; top:120px; text-align:center">
+      <div class="label">Which flow fits you</div>
+      <div class="display" id="s10h" style="margin-top:24px; font-size:84px; line-height:1.03"></div>
+    </div>
+    <div id="s10cards" style="position:absolute; left:240px; top:420px; width:1440px; height:560px; overflow:hidden; border-radius:24px">
+      <img src="shots/modecards.png" style="width:1440px; display:block">
+      <div id="s10barsL" style="position:absolute; left:48px; top:160px; width:542px; height:120px; background:#161619; transform-origin:top"></div>
+      <div id="s10barsR" style="position:absolute; left:715px; top:150px; width:542px; height:130px; background:#161619; transform-origin:top"></div>
+    </div>
+  </section>
+
+  <!-- S11: end card -->
+  <section class="scene" id="s11">
+    <div id="s11glow" style="position:absolute; left:50%; bottom:-520px; width:2600px; height:1100px; margin-left:-1300px; border-radius:50%;
+      background:radial-gradient(50% 50% at 50% 50%, rgb(251 191 36 / 0.34), rgb(251 191 36 / 0.08) 50%, transparent 75%)"></div>
+    <div id="s11sparks"></div>
+    <div class="display ghost" id="s11ghost" style="position:absolute; left:0; right:0; bottom:-110px; text-align:center; font-size:440px; letter-spacing:-0.06em; line-height:0.8">WattWise</div>
+    <div style="position:absolute; left:0; right:0; top:220px; text-align:center">
+      <div class="label" id="s11label">Ready when you are</div>
+      <div class="display" id="s11a" style="margin-top:28px; font-size:118px; line-height:1.02"></div>
+      <div class="display" id="s11b" style="font-size:118px; line-height:1.08"></div>
+      <div id="s11cta" style="margin-top:60px; display:flex; flex-direction:column; align-items:center; gap:26px">
+        <div class="pill">Start sizing <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1c1917" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+        <div class="mono" style="font-size:26px; color:var(--muted); letter-spacing:0.02em">wattwise-rho.vercel.app</div>
+      </div>
+    </div>
+  </section>
+
+  <div id="flash"></div>
+  <div id="vignette"></div>
+  <div id="grain"></div>
+  <div id="fade"></div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const easeOut = (x) => 1 - Math.pow(1 - x, 3);
+const easeOutExpo = (x) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x));
+const easeInOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const backOut = (x) => { const c1 = 1.5, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+
+// Seeded random so every render is identical.
+let seed = 42;
+const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+
+/** Build word spans; highlight words wrapped in *asterisks* in amber. */
+function words(el, text) {
+  el.innerHTML = '';
+  const out = [];
+  text.split(' ').forEach((w, i, arr) => {
+    const s = document.createElement('span');
+    s.className = 'w';
+    const amber = w.startsWith('*');
+    s.textContent = w.replace(/\*/g, '') + (i < arr.length - 1 ? ' ' : '');
+    if (amber) s.style.color = 'var(--accent)';
+    el.appendChild(s);
+    out.push(s);
+  });
+  return out;
+}
+
+/** Word-by-word blur-up reveal starting at t0, one word every `gap` seconds. */
+function revealWords(ws, t, t0, gap = 0.07, dur = 0.6, rise = 40) {
+  ws.forEach((w, i) => {
+    const p = easeOutExpo(prog(t, t0 + i * gap, t0 + i * gap + dur));
+    w.style.opacity = p;
+    w.style.transform = `translateY(${(1 - p) * rise}px)`;
+    w.style.filter = `blur(${(1 - p) * 12}px)`;
+  });
+}
+
+function sceneWindow(el, t, a, b, fin = 0.45, fout = 0.45, blur = true) {
+  const pin = fin ? prog(t, a, a + fin) : (t >= a ? 1 : 0);
+  const pout = fout ? 1 - prog(t, b - fout, b) : (t < b ? 1 : 0);
+  const o = Math.min(pin, pout);
+  el.style.opacity = o;
+  el.style.visibility = o > 0.001 ? 'visible' : 'hidden';
+  el.style.filter = blur && o < 1 ? `blur(${(1 - o) * 14}px)` : 'none';
+  return o;
+}
+
+function makeSparks(host, n, bottom) {
+  const list = [];
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement('div');
+    s.className = 'spark';
+    host.appendChild(s);
+    list.push({ el: s, x: rand() * 1920, speed: 0.08 + rand() * 0.14, phase: rand(), size: 2 + rand() * 4, drift: (rand() - 0.5) * 60, bottom });
+  }
+  return list;
+}
+function drawSparks(list, t, intensity = 1) {
+  list.forEach((s) => {
+    const life = (t * s.speed + s.phase) % 1;
+    const y = s.bottom - life * 520;
+    s.el.style.left = s.x + Math.sin(life * 6 + s.phase * 10) * 10 + life * s.drift + 'px';
+    s.el.style.top = y + 'px';
+    s.el.style.width = s.el.style.height = s.size + 'px';
+    s.el.style.opacity = (life < 0.12 ? life / 0.12 : 1 - (life - 0.12) / 0.88) * 0.85 * intensity;
+  });
+}
+
+// ── Build static DOM ──────────────────────────────────────────────────────
+const s1a = words($('s1a'), 'When the grid goes dark,');
+const s1b = words($('s1b'), 'what keeps your home *running?');
+const s1sparks = makeSparks($('s1sparks'), 18, 1100);
+
+const s2tag = words($('s2tag'), 'Size your backup power system with *confidence.');
+const s2sparks = makeSparks($('s2sparks'), 26, 900);
+
+const s4a = words($('s4a'), 'Three steps.');
+const s4b = words($('s4b'), 'One considered *result.');
+const s4nodes = [];
+['System', 'Loads', 'Spec sheet'].forEach((name, i) => {
+  const n = document.createElement('div');
+  n.style.cssText = `position:absolute; top:${740 - 38}px; left:${560 + i * 400 - 38}px; width:76px; height:76px; border-radius:50%;
+    border:2px solid var(--accent); background:var(--bg); display:grid; place-items:center; color:var(--accent-ink);
+    font:600 24px 'JBM', monospace; box-shadow:0 0 34px 4px rgb(251 191 36 / 0.35)`;
+  n.textContent = String(i + 1).padStart(2, '0');
+  const lab = document.createElement('div');
+  lab.style.cssText = `position:absolute; top:94px; left:50%; transform:translateX(-50%); white-space:nowrap; font:500 26px 'Inter'; color:var(--fg)`;
+  lab.textContent = name;
+  n.appendChild(lab);
+  $('s4nodes').appendChild(n);
+  s4nodes.push(n);
+});
+
+const STEPS = [
+  { n: '01', title: 'Configure your system', body: 'Pick a system voltage, battery size and solar panel. Already own equipment? Enter what you have.', path: '/v2/system' },
+  { n: '02', title: 'Add your loads', body: 'List the appliances you need during an outage, and how long each one should run.', path: '/v2/loads' },
+  { n: '03', title: 'Get your spec sheet', body: 'Inverter, battery bank, solar array and charge controller, in plain English, ready for an installer.', path: '/v2/spec' },
+];
+const stepEls = STEPS.map((s) => {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:absolute; left:0; top:300px; width:540px;';
+  wrap.innerHTML = `
+    <div class="mono" style="font-size:150px; font-weight:600; line-height:1; color:var(--accent); letter-spacing:-0.05em; text-shadow:0 0 60px rgb(251 191 36 / 0.45)">${s.n}</div>
+    <div class="display" style="margin-top:30px; font-size:58px; line-height:1.05; letter-spacing:-0.03em">${s.title}</div>
+    <div style="margin-top:24px; font-size:25px; line-height:1.5; color:var(--muted)">${s.body}</div>`;
+  $('stepText').appendChild(wrap);
+  return wrap;
+});
+
+// Lucide-style icons
+const ICONS = {
+  zap: '<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
+  battery: '<rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2"/><path d="M11 9l-2 3h3l-2 3"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+  gauge: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
+};
+const OUTPUTS = [
+  { label: 'Inverter', value: 0.86, dec: 2, pre: '', unit: 'kVA', note: '≈ 860 W continuous', icon: 'zap' },
+  { label: 'Battery bank', value: 6, dec: 0, pre: '', unit: '× 200 Ah', note: '14.4 kWh total · 7.2 kWh usable', icon: 'battery' },
+  { label: 'Solar array', value: 3, dec: 0, pre: '', unit: '× 400 W', note: '1,200 W installed', icon: 'sun' },
+  { label: 'Charge controller', value: 62.5, dec: 1, pre: '', unit: 'A', note: '1.25 × the array’s 50 A output', icon: 'gauge' },
+];
+const s8rows = OUTPUTS.map((o, i) => {
+  const row = document.createElement('div');
+  row.style.cssText = 'position:relative; display:flex; align-items:center; gap:30px; height:120px;';
+  row.innerHTML = `<span class="mono" style="width:34px; font-size:18px">${String(i + 1).padStart(2, '0')}</span>
+    <span class="display" style="font-size:62px; letter-spacing:-0.035em">${o.label}</span>
+    <span style="position:absolute; left:0; right:0; bottom:0; height:2px; background:var(--line)"><span class="bar" style="position:absolute; inset:0; background:var(--accent); transform-origin:left; box-shadow:0 0 12px rgb(251 191 36 / 0.8)"></span></span>`;
+  $('s8list').appendChild(row);
+  return row;
+});
+$('s8read').innerHTML = `
+  <div style="display:flex; align-items:baseline; gap:26px">
+    <span class="display" id="s8num" style="font-size:230px; line-height:0.9; letter-spacing:-0.06em"></span>
+    <span class="mono" id="s8unit" style="font-size:48px; color:var(--accent-ink)"></span>
+  </div>
+  <div id="s8note" style="margin-top:34px; font-size:30px; color:var(--muted)"></div>`;
+
+const s9h = words($('s9h'), 'A transparent model. No *black *box.');
+const CONSTS = [['0.8', 'Power factor'], ['80%', 'Inverter efficiency'], ['50%', 'Depth of discharge'], ['6 h/day', 'Peak sun hours'], ['80%', 'Solar efficiency'], ['× 1.25', 'Controller headroom']];
+const s9chips = CONSTS.map(([v, k], i) => {
+  const c = document.createElement('div');
+  c.className = 'chip';
+  c.style.left = (i % 3) * 300 + 'px';
+  c.style.top = Math.floor(i / 3) * 150 + 'px';
+  c.style.width = '280px';
+  c.innerHTML = `<div class="v">${v}</div><div class="k">${k}</div>`;
+  $('s9chips').appendChild(c);
+  return c;
+});
+
+const s10h = words($('s10h'), 'Two sizing modes. Same accurate *model.');
+const s11a = words($('s11a'), 'Stop guessing.');
+const s11b = words($('s11b'), 'Size it with *WattWise.');
+const s11sparks = makeSparks($('s11sparks'), 30, 1120);
+
+// ── Per-frame render ──────────────────────────────────────────────────────
+window.renderAt = function (t) {
+  // Global grain shift + opening/closing fade
+  $('grain').style.transform = `translate(${Math.floor(rand() * 200) - 100}px, ${Math.floor(rand() * 200) - 100}px)`;
+  $('fade').style.opacity = Math.max(1 - prog(t, 0, 0.8), prog(t, 59.2, 60));
+
+  // Impact flashes on the musical hits
+  let fl = 0;
+  for (const [h, k] of [[6, 0.9], [12, 0.6], [40, 0.45], [56, 0.6]]) fl = Math.max(fl, t >= h ? k * Math.exp(-(t - h) * 4) : 0);
+  $('flash').style.opacity = fl;
+
+  // S1 — cold open
+  if (sceneWindow($('s1'), t, 0, 6, 0.01, 0.5)) {
+    revealWords(s1a, t, 0.6, 0.16, 0.9);
+    revealWords(s1b, t, 2.7, 0.16, 0.9);
+    const flicker = t > 0.3 && t < 2.6 ? 0.55 + 0.45 * Math.abs(Math.sin(t * 23) * Math.sin(t * 7.3)) : 1;
+    $('s1a').style.opacity = flicker;
+    drawSparks(s1sparks, t, prog(t, 2.5, 5));
+    $('s1').style.transform = `scale(${lerp(1, 1.06, prog(t, 0, 6))})`;
+  }
+
+  // S2 — logo reveal
+  if (sceneWindow($('s2'), t, 5.8, 12, 0.25, 0.45)) {
+    const rise = easeOutExpo(prog(t, 5.8, 8.0));
+    const top = lerp(1300, 760, rise);
+    $('s2planet').style.top = top + 'px';
+    $('s2corona').style.top = top - 550 + 'px';
+    $('s2corona').style.opacity = 0.8 + 0.2 * Math.sin(t * 1.3);
+    $('s2flare').style.top = top - 23 + 'px';
+    $('s2flare').style.left = 960 + Math.sin(t * 0.6) * 220 + 'px';
+    drawSparks(s2sparks, t, rise);
+    const lp = backOut(prog(t, 6.0, 6.9));
+    $('s2bolt').style.transform = `scale(${lp}) rotate(${(1 - lp) * -25}deg)`;
+    const wp = easeOutExpo(prog(t, 6.3, 7.4));
+    $('s2word').style.opacity = wp;
+    $('s2word').style.transform = `translateX(${(1 - wp) * 60}px)`;
+    $('s2word').style.filter = `blur(${(1 - wp) * 16}px)`;
+    const la = easeOut(prog(t, 7.6, 8.3));
+    $('s2label').style.opacity = la;
+    $('s2label').style.letterSpacing = lerp(0.6, 0.22, la) + 'em';
+    revealWords(s2tag, t, 8.2, 0.09, 0.7);
+    $('s2logo').style.transform = `scale(${lerp(1.04, 1, prog(t, 6, 12))})`;
+  }
+
+  // S3 — landing page in the browser
+  if (sceneWindow($('s3'), t, 11.85, 18, 0.2, 0.45)) {
+    const p = easeOutExpo(prog(t, 11.9, 13.6));
+    const drift = easeInOut(prog(t, 13, 18));
+    const b = $('s3b');
+    b.style.transform = `translateY(${(1 - p) * 360 - drift * 40}px) rotateX(${(1 - p) * 28 + 4 - drift * 4}deg) scale(${0.7 + p * 0.14 + drift * 0.07})`;
+    b.style.transformOrigin = '50% 30%';
+  }
+
+  // S4 — three steps
+  if (sceneWindow($('s4'), t, 17.7, 22, 0.35, 0.4)) {
+    const lp = easeOut(prog(t, 17.8, 18.4));
+    $('s4label').style.opacity = lp;
+    revealWords(s4a, t, 18.0, 0.12, 0.7);
+    revealWords(s4b, t, 18.7, 0.12, 0.7);
+    $('s4rail').style.transform = `scaleX(${easeInOut(prog(t, 19.4, 21.0))})`;
+    s4nodes.forEach((n, i) => {
+      const np = backOut(prog(t, 19.4 + i * 0.8, 19.9 + i * 0.8));
+      n.style.transform = `scale(${np})`;
+      n.style.opacity = clamp(np);
+    });
+  }
+
+  // S5–S7 — the guided flow
+  if (sceneWindow($('s5'), t, 21.8, 40.05, 0.4, 0.35)) {
+    const enter = easeOutExpo(prog(t, 21.8, 23.2));
+    const sway = Math.sin(t * 0.35) * 1.5;
+    $('s5b').style.transform = `translateX(${(1 - enter) * 500}px) rotateY(${-10 * (1 - enter) - 5 + sway}deg) rotateX(${2}deg)`;
+    $('s5b').style.transformOrigin = '0% 50%';
+
+    const idx = t < 28 ? 0 : t < 34 ? 1 : 2;
+    const starts = [22, 28, 34];
+    stepEls.forEach((el, i) => {
+      const a = starts[i], b = a + 6;
+      const pin = easeOutExpo(prog(t, a + 0.1, a + 0.9));
+      const pout = i === 2 ? 1 : 1 - easeOut(prog(t, b - 0.35, b));
+      const o = Math.min(pin, pout);
+      el.style.opacity = o;
+      el.style.transform = `translateY(${(1 - pin) * 50 - (1 - pout) * 40}px)`;
+      el.style.filter = `blur(${(1 - o) * 10}px)`;
+    });
+    $('s5path').textContent = STEPS[idx].path.replace('/v2', '/v2');
+
+    // Screens: crossfade at the step boundaries
+    const W = 1128 / 2880;  // image px -> frame px
+    const imgs = [$('img-system'), $('img-loads'), $('img-spec')];
+    imgs.forEach((im, i) => {
+      const a = starts[i];
+      const pin = i === 0 ? 1 : easeOut(prog(t, a - 0.25, a + 0.25));
+      const pout = i === 2 ? 1 : 1 - easeOut(prog(t, a + 6 - 0.25, a + 6 + 0.25));
+      im.style.opacity = Math.min(pin, pout);
+    });
+    // System: slight zoom toward the inputs
+    const zs = easeInOut(prog(t, 23, 28));
+    $('img-system').style.transform = `scale(${1 + zs * 0.12})`;
+    $('img-system').style.transformOrigin = '50% 55%';
+    // Loads: scroll to the table, then highlight the live totals
+    const ls = easeInOut(prog(t, 29.0, 31.0));
+    const loadsY = -ls * 560 * W;
+    $('img-loads').style.transform = `translateY(${loadsY}px)`;
+    const co = $('co-loads');
+    const cp = easeOut(prog(t, 31.0, 31.5)) * (1 - easeOut(prog(t, 33.4, 33.8)));
+    co.style.opacity = cp * (0.85 + 0.15 * Math.sin(t * 6));
+    co.style.left = 1840 * W + 'px'; co.style.top = 840 * W + loadsY + 'px';
+    co.style.width = 430 * W + 'px'; co.style.height = 110 * W + 'px';
+    // Spec: scroll down to "What to buy"
+    const ss = easeInOut(prog(t, 35.0, 37.6));
+    const specY = -ss * 1290 * W;
+    $('img-spec').style.transform = `translateY(${specY}px)`;
+    const cs = $('co-spec');
+    const csp = easeOut(prog(t, 37.8, 38.3));
+    cs.style.opacity = csp * (0.85 + 0.15 * Math.sin(t * 6));
+    cs.style.left = 365 * W + 'px'; cs.style.top = 1405 * W + specY + 'px';
+    cs.style.width = 1385 * W + 'px'; cs.style.height = 940 * W + 'px';
+  }
+
+  // S8 — the four outputs
+  if (sceneWindow($('s8'), t, 39.95, 46, 0.2, 0.4)) {
+    const k = clamp(Math.floor((t - 40) / 1.5), 0, 3);
+    const local = t - 40 - k * 1.5;
+    s8rows.forEach((r, i) => {
+      const on = i === k;
+      const ent = easeOutExpo(prog(t, 40 + i * 0.08, 40.6 + i * 0.08));
+      r.style.opacity = ent;
+      r.style.transform = `translateX(${(1 - ent) * -40 + (on ? 8 : 0)}px)`;
+      r.children[0].style.color = on ? 'var(--accent-ink)' : 'var(--subtle)';
+      r.children[1].style.color = on ? 'var(--fg)' : 'rgba(113,113,122,0.7)';
+      r.querySelector('.bar').style.transform = `scaleX(${on ? clamp(local / 1.5) : i < k ? 0 : 0})`;
+    });
+    const o = OUTPUTS[k];
+    const cp = easeOutExpo(clamp(local / 0.9));
+    $('s8num').textContent = (o.value * cp).toFixed(o.dec);
+    $('s8unit').textContent = o.unit;
+    $('s8note').textContent = o.note;
+    const rin = easeOutExpo(clamp(local / 0.5));
+    const rout = k < 3 ? 1 - easeOut(prog(local, 1.3, 1.5)) : 1;
+    $('s8read').style.opacity = Math.min(rin, rout);
+    $('s8read').style.transform = `translateY(${(1 - rin) * 30 - (1 - rout) * 20}px)`;
+    $('s8read').style.filter = `blur(${(1 - Math.min(rin, rout)) * 10}px)`;
+    $('s8icon').innerHTML = `<svg viewBox="0 0 24 24" width="340" height="340" fill="none" stroke="currentColor" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round">${ICONS[o.icon]}</svg>`;
+    $('s8icon').style.opacity = 0.16 * Math.min(rin, rout);
+  }
+
+  // S9 — transparent model
+  if (sceneWindow($('s9'), t, 45.8, 52, 0.35, 0.4)) {
+    revealWords(s9h, t, 46.0, 0.1, 0.7);
+    s9chips.forEach((c, i) => {
+      const p = backOut(prog(t, 47.0 + i * 0.18, 47.6 + i * 0.18));
+      c.style.opacity = clamp(p);
+      c.style.transform = `translateY(${(1 - clamp(p)) * 30}px) scale(${0.9 + 0.1 * p})`;
+      const lit = Math.abs(((t - 48.5) / 0.45) % 6 - i) < 0.5 && t > 48.5;
+      c.style.borderColor = lit ? 'rgb(251 191 36 / 0.7)' : 'var(--line)';
+    });
+    const pp = easeOutExpo(prog(t, 46.2, 47.4));
+    $('s9panel').style.opacity = pp;
+    $('s9panel').style.transform = `translateY(${(1 - pp) * 80}px)`;
+    // Energy pulse travelling down the diagram's spine (sun -> home)
+    const loop = ((t - 46.5) % 2.2) / 2.2;
+    $('s9pulse').style.top = lerp(60, 930, loop) * (600 / 932) + 'px';
+    $('s9pulse').style.left = 351 * (600 / 932) - 6 + 'px';
+    $('s9pulse').style.opacity = t > 46.5 ? Math.sin(loop * Math.PI) : 0;
+  }
+
+  // S10 — two modes
+  if (sceneWindow($('s10'), t, 51.8, 56, 0.35, 0.3)) {
+    revealWords(s10h, t, 52.0, 0.1, 0.7);
+    const cp = easeOutExpo(prog(t, 52.3, 53.4));
+    $('s10cards').style.opacity = cp;
+    $('s10cards').style.transform = `translateY(${(1 - cp) * 90}px) scale(${0.96 + cp * 0.04})`;
+    // Bars grow from the baseline: shrink a mask that covers them
+    $('s10barsL').style.transform = `scaleY(${1 - easeOutExpo(prog(t, 53.0, 54.0))})`;
+    $('s10barsR').style.transform = `scaleY(${1 - easeOutExpo(prog(t, 53.2, 54.3))})`;
+  }
+
+  // S11 — end card
+  if (sceneWindow($('s11'), t, 55.85, 61, 0.2, 0.01, false)) {
+    const g = easeOut(prog(t, 55.9, 57.5));
+    $('s11glow').style.opacity = g;
+    $('s11glow').style.transform = `translateY(${(1 - g) * 200}px)`;
+    drawSparks(s11sparks, t, g);
+    const gh = easeOutExpo(prog(t, 56.0, 58.0));
+    $('s11ghost').style.transform = `translateY(${(1 - gh) * 160}px)`;
+    $('s11label').style.opacity = easeOut(prog(t, 56.0, 56.5));
+    revealWords(s11a, t, 56.1, 0.12, 0.7);
+    revealWords(s11b, t, 56.6, 0.12, 0.7);
+    const c = backOut(prog(t, 57.3, 58.0));
+    $('s11cta').style.opacity = clamp(c);
+    $('s11cta').style.transform = `translateY(${(1 - c) * 30}px)`;
+  }
+};
+
+window.ready = (async () => {
+  await document.fonts.ready;
+  await Promise.all([...document.images].map((im) => im.decode().catch(() => {})));
+  return true;
+})();
+</script>
+</body>
+</html>
