@@ -19,6 +19,7 @@ if (!projectId || !writeKey) {
     autoTrackPageViews: false,
     autoCaptureExceptions: true,
     autoCaptureWebVitals: true,
+    autoCaptureRequests: true,
     autoCaptureRageClicks: true
   });
 }
