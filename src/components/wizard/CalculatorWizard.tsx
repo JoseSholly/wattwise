@@ -22,6 +22,7 @@ import {
 } from '../../lib/stepFields'
 import { blankItem, v1Schema, v2Schema, type V1Form, type V2Form } from '../../lib/schemas'
 import { clearDraft, readDraft, useCalculatorDraft } from '../../lib/useCalculatorDraft'
+import { traceiq } from '../../traceiq'
 import { Stepper } from './Stepper'
 
 /**
@@ -121,8 +122,19 @@ export function V1Wizard() {
   const mutation = useMutation({
     mutationFn: calculateV1,
     retry: false,
-    onMutate: () => setIssues([]),
+    onMutate: () => {
+      setIssues([])
+      traceiq.track('calculation_submitted', { version: 'v1' })
+    },
+    onSuccess: () => traceiq.track('calculation_succeeded', { version: 'v1' }),
     onError: (error) => {
+      traceiq.track('calculation_failed', {
+        version: 'v1',
+        status: error instanceof ApiError ? error.status : undefined,
+      })
+      if (!(error instanceof ApiError) || error.status === 0 || error.status >= 500) {
+        traceiq.captureException(error, { version: 'v1' })
+      }
       if (!(error instanceof ApiError)) return
       const unplaced: ApiIssue[] = []
       for (const issue of error.issues) {
@@ -188,8 +200,19 @@ export function V2Wizard() {
   const mutation = useMutation({
     mutationFn: calculateV2,
     retry: false,
-    onMutate: () => setIssues([]),
+    onMutate: () => {
+      setIssues([])
+      traceiq.track('calculation_submitted', { version: 'v2' })
+    },
+    onSuccess: () => traceiq.track('calculation_succeeded', { version: 'v2' }),
     onError: (error) => {
+      traceiq.track('calculation_failed', {
+        version: 'v2',
+        status: error instanceof ApiError ? error.status : undefined,
+      })
+      if (!(error instanceof ApiError) || error.status === 0 || error.status >= 500) {
+        traceiq.captureException(error, { version: 'v2' })
+      }
       if (!(error instanceof ApiError)) return
       const unplaced: ApiIssue[] = []
       for (const issue of error.issues) {

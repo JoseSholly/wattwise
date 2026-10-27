@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
+import { traceiq } from '../traceiq'
 import { API_DOCS_URL, API_REPO_URL, REPO_URL } from '../lib/links'
 import { ThemeToggle } from './ThemeToggle'
 import { Wordmark } from './Wordmark'
@@ -15,6 +16,7 @@ export function Layout() {
 
   useEffect(() => {
     window.scrollTo(0, 0)
+    traceiq.page()
   }, [pathname])
 
   const isLanding = pathname === '/'
