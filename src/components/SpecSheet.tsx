@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { SizingOutput } from '../api/types'
-import { num } from '../lib/format'
+import { duration, num } from '../lib/format'
+import { BATTERY_SAFETY_LIMIT, batteryRuntimeHours } from '../lib/model'
 
 export type SpecItem = {
   name: string
@@ -53,7 +54,8 @@ export function SpecSheet({
   const applianceCount = items.length
 
   const batteryBankWh = output.numbers_of_batteries * BATTERY_UNIT_VOLTAGE * battery_capacity
-  const usableKwh = (batteryBankWh * 0.5) / 1000
+  const usableKwh = (batteryBankWh * BATTERY_SAFETY_LIMIT) / 1000
+  const runtimeHours = batteryRuntimeHours(batteryBankWh, output.total_load)
 
   return (
     <div className="flex flex-col gap-10">
@@ -62,12 +64,14 @@ export function SpecSheet({
         totalLoadW={output.total_load}
         totalDailyKwh={totalDailyKwh}
         sharedBackupTime={shared_backup_time}
+        runtimeHours={runtimeHours}
       />
       <ShoppingList
         output={output}
         system_voltage={system_voltage}
         battery_capacity={battery_capacity}
         solar_panel_watt={solar_panel_watt}
+        runtimeHours={runtimeHours}
       />
       <WiringExplainer
         system_voltage={system_voltage}
@@ -86,6 +90,7 @@ export function SpecSheet({
         applianceCount={applianceCount}
         totalLoadW={output.total_load}
         sharedBackupTime={shared_backup_time}
+        runtimeHours={runtimeHours}
       />
     </div>
   )
@@ -100,12 +105,22 @@ function PoweringSummary({
   totalLoadW,
   totalDailyKwh,
   sharedBackupTime,
+  runtimeHours,
 }: {
   applianceCount: number
   totalLoadW: number
   totalDailyKwh: number
   sharedBackupTime: number | undefined
+  runtimeHours: number | null
 }) {
+  // Compact for the stat grid; the friendly phrase lives in BatteryRuntime.
+  const runtimeStat =
+    runtimeHours === null
+      ? null
+      : runtimeHours >= 48
+        ? { value: num(Math.round((runtimeHours / 24) * 10) / 10), unit: 'days' }
+        : { value: num(Math.round(runtimeHours * 10) / 10), unit: 'h' }
+
   return (
     <Section eyebrow="01" title="What you're powering">
       <p className="max-w-prose text-[15px] leading-relaxed text-muted">
@@ -113,10 +128,11 @@ function PoweringSummary({
           ? `Your plan is designed to run every appliance you selected simultaneously for ${num(sharedBackupTime)} hour${sharedBackupTime === 1 ? '' : 's'} per day, straight from the sun and the batteries.`
           : 'Your plan is designed to run each appliance for its own daily runtime — detailed in the breakdown on the right — from the sun and the batteries.'}
       </p>
-      <dl className="mt-6 grid grid-cols-3 gap-4 border-t border-line pt-5">
+      <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-line pt-5 sm:grid-cols-4">
         <Stat label="Appliances" value={num(applianceCount)} unit="" />
         <Stat label="Running load" value={num(totalLoadW)} unit="W" />
         <Stat label="Daily energy" value={num(Math.round(totalDailyKwh * 100) / 100)} unit="kWh" />
+        {runtimeStat && <Stat label="On batteries" value={runtimeStat.value} unit={runtimeStat.unit} />}
       </dl>
     </Section>
   )
@@ -142,15 +158,17 @@ function ShoppingList({
   output,
   battery_capacity,
   solar_panel_watt,
+  runtimeHours,
 }: {
   output: SizingOutput
   system_voltage: number
   battery_capacity: number
   solar_panel_watt: number
+  runtimeHours: number | null
 }) {
   const installedPanelW = output.numbers_of_solar_panel * solar_panel_watt
   const batteryBankKwh = (output.numbers_of_batteries * BATTERY_UNIT_VOLTAGE * battery_capacity) / 1000
-  const usableKwh = Math.round((batteryBankKwh / 2) * 10) / 10
+  const usableKwh = Math.round(batteryBankKwh * BATTERY_SAFETY_LIMIT * 10) / 10
 
   return (
     <Section eyebrow="02" title="What to buy">
@@ -208,7 +226,47 @@ function ShoppingList({
           }
         />
       </ol>
+      {runtimeHours !== null && <BatteryRuntime hours={runtimeHours} />}
     </Section>
+  )
+}
+
+/** How long the bank lasts with no sun, and the safety limit that caps it. */
+function BatteryRuntime({ hours }: { hours: number }) {
+  const used = Math.round(BATTERY_SAFETY_LIMIT * 100)
+  const reserve = 100 - used
+  return (
+    <div className="mt-5 rounded-md border border-line p-4 sm:p-5">
+      <p className="label-mono">On batteries alone</p>
+      <p className="mt-1.5 text-[15px] leading-relaxed text-fg">
+        Your batteries can run everything for{' '}
+        <strong className="num font-semibold">about {duration(hours)}</strong> with no sun.
+      </p>
+
+      <div
+        role="img"
+        aria-label={`${used}% of the battery is used; ${reserve}% is kept in reserve as a safety limit`}
+        className="mt-4 flex h-3 overflow-hidden rounded-full border border-line"
+      >
+        <div className="bg-accent" style={{ width: `${used}%` }} />
+        <div
+          className="flex-1 bg-surface2"
+          style={{
+            backgroundImage:
+              'repeating-linear-gradient(135deg, rgb(var(--line-strong)) 0 1px, transparent 1px 6px)',
+          }}
+        />
+      </div>
+      <div className="mt-2 flex flex-wrap justify-between gap-x-4 gap-y-1 text-[12px]">
+        <span className="font-medium text-accent-ink">Used: {used}%</span>
+        <span className="text-muted">Safety limit: {reserve}% kept in reserve</span>
+      </div>
+
+      <p className="mt-3 text-[13px] leading-relaxed text-muted">
+        The system stops at half charge so the batteries last years longer. Appliances that don't all
+        run together will last longer than this.
+      </p>
+    </div>
   )
 }
 
@@ -448,10 +506,12 @@ function ClosingLine({
   applianceCount,
   totalLoadW,
   sharedBackupTime,
+  runtimeHours,
 }: {
   applianceCount: number
   totalLoadW: number
   sharedBackupTime: number | undefined
+  runtimeHours: number | null
 }) {
   const totalKw = Math.round((totalLoadW / 1000) * 100) / 100
   return (
@@ -475,6 +535,12 @@ function ClosingLine({
           <> at each appliance's own daily runtime</>
         )}{' '}
         on solar power, provided you don't drain the batteries past the halfway mark.
+        {runtimeHours !== null && (
+          <>
+            {' '}With no sun, the batteries alone keep everything going for{' '}
+            <strong className="font-semibold">about {duration(runtimeHours)}</strong>.
+          </>
+        )}
       </p>
     </section>
   )
